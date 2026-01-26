@@ -40,6 +40,12 @@
     const token = shouldAttachAuth ? window.Utils?.getSession?.().access_token : null;
 
     try {
+      if (shouldAttachAuth && !token) {
+        window.Utils?.clearSession?.();
+        window.location.href = "login.html";
+        return { ok: false, data: fallbackData, request_id: lastRequestId };
+      }
+
       const res = await fetch(url, {
         method,
         headers: {
@@ -58,7 +64,7 @@
       window.LAST_REQUEST_ID = lastRequestId;
       window.Layout?.updateRequestId?.(lastRequestId);
 
-      if (shouldAttachAuth && res.status === 401) {
+      if (res.status === 401) {
         window.Utils?.clearSession?.();
         window.location.href = "login.html";
         return { ok: false, data: fallbackData, request_id: lastRequestId };

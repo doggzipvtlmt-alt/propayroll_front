@@ -30,19 +30,27 @@
       } catch (parseError) {
         data = {};
       }
-      const accessToken = data?.data?.access_token;
+      const accessToken = data?.access_token || data?.data?.access_token;
+      const user = data?.user || data?.data?.user || {};
 
-      if (res.ok && data?.ok === true && accessToken) {
+      if (res.ok && accessToken) {
+        localStorage.setItem("access_token", accessToken);
+        localStorage.setItem("user", JSON.stringify(user));
         Utils.setSession({
           access_token: accessToken,
-          user: data?.data?.user || {}
+          user
         });
         Toast.show("success", "Login successful.");
         window.location.href = "index.html";
         return;
       }
 
-      const message = data?.message || data?.error || "Invalid email/password";
+      if (res.status === 401) {
+        Toast.show("error", "Invalid email/password");
+        return;
+      }
+
+      const message = data?.message || data?.error || "Login failed";
       Toast.show("error", message);
     } catch (err) {
       Toast.show("error", err.message || "Invalid email/password");

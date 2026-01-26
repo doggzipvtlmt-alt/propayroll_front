@@ -1,5 +1,8 @@
 (function () {
   const SESSION_KEY = "officeos_session";
+  const ACCESS_TOKEN_KEY = "access_token";
+  const USER_KEY = "user";
+  const COMPANY_ID_KEY = "company_id";
 
   const qs = (name) => new URL(window.location.href).searchParams.get(name);
   const el = (sel, root = document) => root.querySelector(sel);
@@ -38,6 +41,23 @@
 
   const storage = {
     get() {
+      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+      const userRaw = localStorage.getItem(USER_KEY);
+      const companyId = localStorage.getItem(COMPANY_ID_KEY);
+      if (accessToken || userRaw || companyId) {
+        let user = {};
+        try {
+          user = userRaw ? JSON.parse(userRaw) : {};
+        } catch (err) {
+          user = {};
+        }
+        return {
+          access_token: accessToken || "",
+          user,
+          company_id: companyId || ""
+        };
+      }
+
       try {
         return JSON.parse(localStorage.getItem(SESSION_KEY) || "{}");
       } catch (err) {
@@ -45,14 +65,28 @@
       }
     },
     set(data) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, data?.access_token || "");
+      localStorage.setItem(USER_KEY, JSON.stringify(data?.user || {}));
+      if (data?.company_id) {
+        localStorage.setItem(COMPANY_ID_KEY, data.company_id);
+      }
       localStorage.setItem(SESSION_KEY, JSON.stringify(data));
     },
     clear() {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(COMPANY_ID_KEY);
       localStorage.removeItem(SESSION_KEY);
     }
   };
 
-  const getSession = () => storage.get();
+  const getSession = () => {
+    const session = storage.get();
+    if (session?.access_token || session?.user) {
+      return session;
+    }
+    return {};
+  };
 
   const setSession = ({ access_token, user, company_id }) => {
     storage.set({
