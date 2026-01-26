@@ -1,27 +1,42 @@
-(function () {
-  Utils.renderLayout();
+(async function () {
+  const ready = await Utils.ensureAuthenticated();
+  if (!ready) return;
 
-  const content = Utils.el("#pageContent");
-  content.innerHTML = `
-    <div class="page-title">
-      <div>
-        <div class="breadcrumb">Admin / Approvals</div>
-        <h1>Approval Queue</h1>
-        <p class="muted">Review pending approvals across leave, payroll, and access requests.</p>
+  const canAccess = Utils.hasRole(["HR", "MD", "ADMIN"]);
+
+  const content = Layout.render({
+    title: "Approvals Desk",
+    subtitle: "Centralized approvals for payroll and HR operations.",
+    breadcrumb: ["HR", "Approvals"]
+  });
+
+  if (!content) return;
+
+  if (!canAccess) {
+    content.innerHTML += `
+      <div class="card">
+        <h3>Access Restricted</h3>
+        <p class="muted">Approval workflows are restricted to HR, MD, and ADMIN roles.</p>
       </div>
-    </div>
+    `;
+    return;
+  }
 
-    <div class="grid three">
-      <div class="card"><h3 id="pendingCount">0</h3><p class="muted">Pending Items</p></div>
-      <div class="card"><h3>6</h3><p class="muted">Overdue Reviews</p></div>
-      <div class="card"><h3>98%</h3><p class="muted">SLA Compliance</p></div>
-    </div>
-
-    <div class="split">
+  content.innerHTML += `
+    <div class="grid two">
       <div>
         <div class="card">
-          <div class="hd"><h3>Filters</h3><span class="hint">Narrow down approvals</span></div>
+          <div class="hd"><h3>Filters</h3><span class="hint">Refine approvals</span></div>
           <div class="form-grid">
+            <div>
+              <label>Type</label>
+              <select id="typeFilter">
+                <option value="">All</option>
+                <option>Leave</option>
+                <option>Expense</option>
+                <option>Payroll</option>
+              </select>
+            </div>
             <div>
               <label>Status</label>
               <select id="statusFilter">
@@ -32,103 +47,112 @@
               </select>
             </div>
             <div>
-              <label>Entity Type</label>
-              <select id="entityFilter">
+              <label>Priority</label>
+              <select id="priorityFilter">
                 <option value="">All</option>
-                <option>Leave</option>
-                <option>Payroll</option>
-                <option>Access</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
               </select>
-            </div>
-            <div>
-              <label>Search</label>
-              <input class="input" id="approvalSearch" placeholder="Employee or request ID" />
             </div>
           </div>
         </div>
-
-        <div class="card" style="margin-top:24px;">
-          <div class="hd"><h3>Approval List</h3><span class="hint" id="approvalCount">0 items</span></div>
+        <div class="card" style="margin-top:16px;">
+          <div class="hd"><h3>Approval Queue</h3><span class="hint" id="approvalCount">0 requests</span></div>
           <div id="approvalTable"></div>
         </div>
       </div>
       <div>
         <div class="card">
-          <div class="hd"><h3>Best Practices</h3><span class="hint">Operations tips</span></div>
+          <div class="hd"><h3>Service Notes</h3><span class="hint">Guidance</span></div>
           <ul class="help-list">
-            <li>Review approvals within 24 hours to maintain SLA.</li>
-            <li>Route payroll approvals to Finance and HR jointly.</li>
-            <li>Use notes to document decision rationale.</li>
+            <li>Payroll approvals must be locked 2 days before payday.</li>
+            <li>High priority items auto-escalate to MD after 24 hours.</li>
+            <li>Rejected items require a reason in audit logs.</li>
           </ul>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="hd"><h3>Print Batch</h3><span class="hint">Print-ready</span></div>
+          <p class="muted">Use print to archive approvals for compliance reviews.</p>
         </div>
       </div>
     </div>
   `;
 
-  const fallbackApprovals = Array.from({ length: 12 }, (_, i) => ({
-    id: `APR-${100 + i}`,
-    employee: i % 2 === 0 ? "Avery Patel" : "Jordan Lee",
-    entity_type: i % 3 === 0 ? "Leave" : i % 3 === 1 ? "Payroll" : "Access",
-    submitted_at: `2023-09-${10 + i}`,
-    status: i % 4 === 0 ? "Rejected" : i % 3 === 0 ? "Approved" : "Pending"
+  const approvalTable = Utils.el("#approvalTable");
+  const approvalCount = Utils.el("#approvalCount");
+
+  const fallbackApprovals = Array.from({ length: 8 }, (_, i) => ({
+    id: i + 1,
+    requester: i % 2 === 0 ? "Avery Patel" : "Jordan Lee",
+    type: i % 2 === 0 ? "Leave" : "Expense",
+    submitted: `2024-09-${String(i + 1).padStart(2, "0")}`,
+    status: i % 3 === 0 ? "Pending" : i % 3 === 1 ? "Approved" : "Rejected",
+    priority: i % 2 === 0 ? "High" : "Medium"
   }));
 
   let approvals = [];
-  const approvalTable = Utils.el("#approvalTable");
 
   const renderTable = () => {
+    const type = Utils.el("#typeFilter").value;
+    const status = Utils.el("#statusFilter").value;
+    const priority = Utils.el("#priorityFilter").value;
+
+    const rows = approvals.filter((row) => {
+      if (type && row.type !== type) return false;
+      if (status && row.status !== status) return false;
+      if (priority && row.priority !== priority) return false;
+      return true;
+    });
+
+    approvalCount.textContent = `${rows.length} requests`;
+
     const columns = [
-      { key: "id", label: "Request ID" },
-      { key: "employee", label: "Employee" },
-      { key: "entity_type", label: "Type" },
-      { key: "submitted_at", label: "Submitted", render: (r) => Utils.formatDate(r.submitted_at) },
-      { key: "status", label: "Status", render: (r) => Badge.render(r.status) }
+      { key: "requester", label: "Requester" },
+      { key: "type", label: "Type" },
+      { key: "submitted", label: "Submitted", render: (r) => Utils.formatDate(r.submitted), exportValue: (r) => r.submitted },
+      { key: "priority", label: "Priority" },
+      { key: "status", label: "Status", render: (r) => Badge.render(r.status), exportValue: (r) => r.status }
     ];
 
-    Table.render(approvalTable, {
-      columns,
-      rows: approvals,
-      rowActions: (row) => `
+    const rowActions = (row) => {
+      if (row.status !== "Pending") return "—";
+      return `
         <div style="display:flex; gap:6px;">
           <button class="btn small" data-approve="${row.id}">Approve</button>
           <button class="btn small" data-reject="${row.id}">Reject</button>
         </div>
-      `,
-      emptyText: "No approvals in queue."
-    });
-    Utils.el("#approvalCount").textContent = `${approvals.length} items`;
-    Utils.el("#pendingCount").textContent = approvals.filter((row) => row.status === "Pending").length;
+      `;
+    };
+
+    Table.render(approvalTable, { columns, rows, rowActions, emptyText: "No approvals pending." });
   };
 
   const loadApprovals = async () => {
-    const query = {
-      status: Utils.el("#statusFilter").value,
-      entity_type: Utils.el("#entityFilter").value,
-      search: Utils.el("#approvalSearch").value
-    };
-
     Loader.show(approvalTable);
-    const response = await api.get("/api/approvals", query);
-    approvals = response.ok ? (response.data?.items || response.data || []) : fallbackApprovals;
-    if (!approvals.length) approvals = fallbackApprovals;
-    renderTable();
+    const response = await api.get("/api/approvals", null, { fallbackData: fallbackApprovals });
+    approvals = response.data || fallbackApprovals;
     Loader.hide(approvalTable);
+    renderTable();
   };
 
   approvalTable.addEventListener("click", async (event) => {
     const approveId = event.target.closest("button[data-approve]")?.dataset.approve;
     const rejectId = event.target.closest("button[data-reject]")?.dataset.reject;
     if (approveId) {
-      Toast.show("success", `Approval ${approveId} marked approved.`);
+      await api.put(`/api/approvals/${approveId}/approve`, {}, { fallbackData: {} });
+      approvals = approvals.map((row) => row.id === Number(approveId) ? { ...row, status: "Approved" } : row);
+      renderTable();
     }
     if (rejectId) {
-      Toast.show("success", `Approval ${rejectId} marked rejected.`);
+      await api.put(`/api/approvals/${rejectId}/reject`, {}, { fallbackData: {} });
+      approvals = approvals.map((row) => row.id === Number(rejectId) ? { ...row, status: "Rejected" } : row);
+      renderTable();
     }
   });
 
-  ["statusFilter", "entityFilter", "approvalSearch"].forEach((id) => {
-    Utils.el(`#${id}`)?.addEventListener("input", Utils.debounce(loadApprovals, 400));
-    Utils.el(`#${id}`)?.addEventListener("change", loadApprovals);
+  ["typeFilter", "statusFilter", "priorityFilter"].forEach((id) => {
+    Utils.el(`#${id}`)?.addEventListener("change", renderTable);
   });
 
   loadApprovals();

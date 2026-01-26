@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ProPayroll Office OS • Login</title>
+  <link rel="stylesheet" href="assets/css/styles.css"/>
+</head>
+<body class="login-body">
+  <main class="login-card">
+    <h1>ProPayroll Office OS Portal</h1>
+    <p class="muted">Secure access for HR, payroll, and compliance users.</p>
+    <form id="loginForm" class="form-grid">
+      <div>
+        <label>Company ID</label>
+        <input class="input" name="company_id" placeholder="COMP-001" required />
+      </div>
+      <div>
+        <label>Identifier</label>
+        <input class="input" name="identifier" placeholder="Employee Code / Email" required />
+      </div>
+      <div>
+        <label>Date of Birth or PIN</label>
+        <input class="input" name="dob_or_pin" type="password" placeholder="DD-MM-YYYY or PIN" required />
+      </div>
+      <button class="btn primary" type="submit">Sign In</button>
+    </form>
+    <div class="notice-panel" style="margin-top:16px;">
+      <strong>Security Notice</strong>
+      <p class="login-meta">Access is monitored. Ensure your details match payroll records.</p>
+    </div>
+    <p class="login-meta" style="margin-top:16px;">Need help? Contact your HR administrator.</p>
+  </main>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/pages/login.js" defer></script>
+</body>
+</html>
