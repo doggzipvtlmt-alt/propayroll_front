@@ -1,7 +1,7 @@
 (function () {
-  Components.mountLayout({ activeNav: "employees" });
+  Utils.renderLayout();
 
-  const content = document.getElementById("pageContent");
+  const content = Utils.el("#pageContent");
   content.innerHTML = `
     <div class="page-title">
       <div>
@@ -15,80 +15,103 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="hd">
-        <h3>Filters & Search</h3>
-        <span class="hint">Use filters to narrow results</span>
-      </div>
-      <div class="bd form-grid">
-        <div>
-          <label for="searchInput">Search</label>
-          <input class="input" id="searchInput" placeholder="Name, email, employee code" />
+    <div class="split">
+      <div>
+        <div class="card">
+          <div class="hd">
+            <h3>Filters & Search</h3>
+            <span class="hint">Use filters to narrow results</span>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label>Search</label>
+              <input class="input" id="searchInput" placeholder="Name, email, employee code" />
+            </div>
+            <div>
+              <label>Department</label>
+              <select id="departmentFilter">
+                <option value="">All Departments</option>
+                <option>Engineering</option>
+                <option>People Ops</option>
+                <option>Finance</option>
+                <option>Sales</option>
+              </select>
+            </div>
+            <div>
+              <label>Designation</label>
+              <select id="designationFilter">
+                <option value="">All Designations</option>
+                <option>Manager</option>
+                <option>Analyst</option>
+                <option>Lead</option>
+                <option>Associate</option>
+              </select>
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="statusFilter">
+                <option value="">Any Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div>
+              <label>Sort By</label>
+              <select id="sortBy">
+                <option value="name">Name</option>
+                <option value="department">Department</option>
+                <option value="join_date">Join Date</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div>
-          <label for="departmentFilter">Department</label>
-          <select id="departmentFilter">
-            <option value="">All Departments</option>
-            <option>Engineering</option>
-            <option>People Ops</option>
-            <option>Finance</option>
-            <option>Sales</option>
-          </select>
-        </div>
-        <div>
-          <label for="designationFilter">Designation</label>
-          <select id="designationFilter">
-            <option value="">All Designations</option>
-            <option>Manager</option>
-            <option>Analyst</option>
-            <option>Lead</option>
-            <option>Associate</option>
-          </select>
-        </div>
-        <div>
-          <label for="statusFilter">Status</label>
-          <select id="statusFilter">
-            <option value="">Any Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-        <div>
-          <label for="sortBy">Sort By</label>
-          <select id="sortBy">
-            <option value="name">Name</option>
-            <option value="department">Department</option>
-            <option value="join_date">Join Date</option>
-          </select>
-        </div>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="hd">
-        <h3>Employee List</h3>
-        <span class="hint" id="employeeCount">0 records</span>
+        <div class="card" style="margin-top:24px;">
+          <div class="hd">
+            <h3>Employee List</h3>
+            <span class="hint" id="employeeCount">0 records</span>
+          </div>
+          <div id="employeeTable"></div>
+          <div id="employeePagination"></div>
+        </div>
       </div>
-      <div class="bd" id="employeeTable">${Components.loader("Loading employees...")}</div>
-      <div class="ft" id="employeePagination"></div>
-    </div>
-
-    <div class="card">
-      <div class="hd">
-        <h3>Help Tips</h3>
-        <span class="hint">Onboarding guidance</span>
-      </div>
-      <div class="bd">
-        <ul class="help-list">
-          <li>Keep employee codes consistent with payroll systems.</li>
-          <li>Assign managers to maintain accurate reporting structures.</li>
-          <li>Inactive employees remain searchable for audit history.</li>
-        </ul>
+      <div>
+        <div class="card">
+          <div class="hd">
+            <h3>Quick Stats</h3>
+            <span class="hint">People pulse</span>
+          </div>
+          <div class="grid">
+            <div>
+              <strong id="statActive">0</strong>
+              <p class="muted">Active Employees</p>
+            </div>
+            <div>
+              <strong id="statNew">0</strong>
+              <p class="muted">New this month</p>
+            </div>
+            <div>
+              <strong id="statManagers">0</strong>
+              <p class="muted">People Managers</p>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:24px;">
+          <div class="hd">
+            <h3>Help Tips</h3>
+            <span class="hint">Onboarding guidance</span>
+          </div>
+          <ul class="help-list">
+            <li>Keep employee codes consistent with payroll systems.</li>
+            <li>Assign managers to maintain accurate reporting structures.</li>
+            <li>Inactive employees remain searchable for audit history.</li>
+          </ul>
+        </div>
       </div>
     </div>
   `;
 
-  const fallbackEmployees = Utils.sampleRange(14, (i) => ({
+  const fallbackEmployees = Array.from({ length: 15 }, (_, i) => ({
     id: i + 1,
     emp_code: `EMP-${1000 + i}`,
     name: i % 2 === 0 ? "Avery Patel" : "Jordan Lee",
@@ -96,7 +119,7 @@
     designation: i % 2 === 0 ? "Lead" : "Analyst",
     manager: i % 2 === 0 ? "Maria Thomas" : "Chen Wu",
     join_date: `2022-0${(i % 9) + 1}-15`,
-    status: i % 4 === 0 ? "inactive" : "active",
+    status: i % 4 === 0 ? "Inactive" : "Active",
     email: `user${i}@officeos.com`,
     phone: "+1-202-555-01" + String(i).padStart(2, "0")
   }));
@@ -105,19 +128,19 @@
   let page = 1;
   const pageSize = 10;
 
-  const employeeTable = document.getElementById("employeeTable");
-  const employeePagination = document.getElementById("employeePagination");
-  const employeeCount = document.getElementById("employeeCount");
+  const employeeTable = Utils.el("#employeeTable");
+  const employeePagination = Utils.el("#employeePagination");
+  const employeeCount = Utils.el("#employeeCount");
 
-  function renderTable(rows) {
+  const renderTable = (rows) => {
     const columns = [
       { key: "emp_code", label: "Emp Code" },
       { key: "name", label: "Name" },
       { key: "department", label: "Dept" },
       { key: "designation", label: "Designation" },
       { key: "manager", label: "Manager" },
-      { key: "join_date", label: "Join Date", render: (r) => Utils.fmtDate(r.join_date) },
-      { key: "status", label: "Status", render: (r) => Components.badge(r.status, r.status) },
+      { key: "join_date", label: "Join Date", render: (r) => Utils.formatDate(r.join_date) },
+      { key: "status", label: "Status", render: (r) => Badge.render(r.status) },
       { key: "email", label: "Email" },
       { key: "phone", label: "Phone" }
     ];
@@ -130,175 +153,165 @@
       </div>
     `;
 
-    employeeTable.innerHTML = Components.table({ columns, rows, rowActions, emptyText: "No employees found." });
-  }
+    Table.render(employeeTable, { columns, rows, rowActions, emptyText: "No employees found." });
+  };
 
-  function renderPagination(total) {
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-    employeePagination.innerHTML = "";
-    employeePagination.appendChild(Components.pagination({
+  const renderPagination = (total) => {
+    Pagination.render(employeePagination, {
       page,
-      totalPages,
-      onChange: (next) => {
+      pageSize,
+      total,
+      onPageChange: (next) => {
         page = next;
         loadEmployees();
       }
-    }));
-  }
+    });
+  };
 
-  function openEmployeeModal({ mode = "add", data = {} } = {}) {
+  const openEmployeeModal = ({ mode = "add", data = {} } = {}) => {
     const isEdit = mode === "edit";
-    const modal = Components.openModal({
+    Modal.open("employee", `
+      <form id="employeeForm" class="form-grid">
+        <div>
+          <label>Employee Code</label>
+          <input class="input" name="emp_code" value="${Utils.escapeHtml(data.emp_code || "")}" required />
+        </div>
+        <div>
+          <label>Name</label>
+          <input class="input" name="name" value="${Utils.escapeHtml(data.name || "")}" required />
+        </div>
+        <div>
+          <label>Department</label>
+          <input class="input" name="department" value="${Utils.escapeHtml(data.department || "")}" />
+        </div>
+        <div>
+          <label>Designation</label>
+          <input class="input" name="designation" value="${Utils.escapeHtml(data.designation || "")}" />
+        </div>
+        <div>
+          <label>Manager</label>
+          <input class="input" name="manager" value="${Utils.escapeHtml(data.manager || "")}" />
+        </div>
+        <div>
+          <label>Join Date</label>
+          <input class="input" type="date" name="join_date" value="${data.join_date || ""}" />
+        </div>
+        <div>
+          <label>Status</label>
+          <select name="status">
+            <option value="Active" ${data.status === "Active" ? "selected" : ""}>Active</option>
+            <option value="Inactive" ${data.status === "Inactive" ? "selected" : ""}>Inactive</option>
+          </select>
+        </div>
+        <div>
+          <label>Email</label>
+          <input class="input" name="email" value="${Utils.escapeHtml(data.email || "")}" />
+        </div>
+        <div>
+          <label>Phone</label>
+          <input class="input" name="phone" value="${Utils.escapeHtml(data.phone || "")}" />
+        </div>
+      </form>
+    `, {
       title: isEdit ? "Edit Employee" : "Add Employee",
-      bodyHtml: `
-        <form id="employeeForm" class="form-grid">
-          <div>
-            <label>Employee Code</label>
-            <input class="input" name="emp_code" value="${Utils.escapeHtml(data.emp_code || "")}" required />
-          </div>
-          <div>
-            <label>Name</label>
-            <input class="input" name="name" value="${Utils.escapeHtml(data.name || "")}" required />
-          </div>
-          <div>
-            <label>Department</label>
-            <input class="input" name="department" value="${Utils.escapeHtml(data.department || "")}" />
-          </div>
-          <div>
-            <label>Designation</label>
-            <input class="input" name="designation" value="${Utils.escapeHtml(data.designation || "")}" />
-          </div>
-          <div>
-            <label>Manager</label>
-            <input class="input" name="manager" value="${Utils.escapeHtml(data.manager || "")}" />
-          </div>
-          <div>
-            <label>Join Date</label>
-            <input class="input" type="date" name="join_date" value="${data.join_date || ""}" />
-          </div>
-          <div>
-            <label>Status</label>
-            <select name="status">
-              <option value="active" ${data.status === "active" ? "selected" : ""}>Active</option>
-              <option value="inactive" ${data.status === "inactive" ? "selected" : ""}>Inactive</option>
-            </select>
-          </div>
-          <div>
-            <label>Email</label>
-            <input class="input" name="email" value="${Utils.escapeHtml(data.email || "")}" />
-          </div>
-          <div>
-            <label>Phone</label>
-            <input class="input" name="phone" value="${Utils.escapeHtml(data.phone || "")}" />
-          </div>
-        </form>
-      `,
-      footerHtml: `
-        <button class="btn" id="cancelEmployee">Cancel</button>
+      footer: `
+        <button class="btn" data-close>Cancel</button>
         <button class="btn primary" id="saveEmployee">${isEdit ? "Save" : "Create"}</button>
       `
     });
 
-    document.getElementById("cancelEmployee").addEventListener("click", modal.close);
-    document.getElementById("saveEmployee").addEventListener("click", async () => {
-      const form = document.getElementById("employeeForm");
+    Utils.el("#saveEmployee")?.addEventListener("click", async () => {
+      const form = Utils.el("#employeeForm");
       const payload = Object.fromEntries(new FormData(form).entries());
-      try {
-        if (isEdit) {
-          await API.request(`/api/employees/${data.id}`, { method: "PUT", body: payload });
-          employees = employees.map((emp) => emp.id === data.id ? { ...emp, ...payload } : emp);
-        } else {
-          const created = await API.request("/api/employees", { method: "POST", body: payload });
-          employees = [created, ...employees];
-        }
-        Components.toast({ title: "Saved", message: "Employee record updated.", type: "success" });
-      } catch (err) {
-        if (!isEdit) {
-          employees = [{ id: Date.now(), ...payload }, ...employees];
-        } else {
-          employees = employees.map((emp) => emp.id === data.id ? { ...emp, ...payload } : emp);
-        }
+      if (isEdit) {
+        const response = await api.put(`/api/employees/${data.id}`, payload);
+        employees = employees.map((emp) => emp.id === data.id ? { ...emp, ...payload } : emp);
+        if (response.ok) Toast.show("success", "Employee updated.");
+      } else {
+        const response = await api.post("/api/employees", payload);
+        const created = response.ok ? response.data : { id: Date.now(), ...payload };
+        employees = [created, ...employees];
+        Toast.show("success", "Employee created.");
       }
-      modal.close();
+      Modal.close("employee");
       loadEmployees(false);
     });
-  }
+  };
 
-  function openDeleteModal(emp) {
-    const modal = Components.openModal({
+  const openDeleteModal = (emp) => {
+    Confirm.open({
       title: "Delete Employee",
-      bodyHtml: `<p>Are you sure you want to remove <strong>${Utils.escapeHtml(emp.name)}</strong>?</p>`,
-      footerHtml: `
-        <button class="btn" id="cancelDelete">Cancel</button>
-        <button class="btn primary" id="confirmDelete">Delete</button>
-      `
-    });
-
-    document.getElementById("cancelDelete").addEventListener("click", modal.close);
-    document.getElementById("confirmDelete").addEventListener("click", async () => {
-      try {
-        await API.request(`/api/employees/${emp.id}`, { method: "DELETE" });
-        employees = employees.filter((e) => e.id !== emp.id);
-        Components.toast({ title: "Deleted", message: "Employee removed.", type: "success" });
-      } catch (err) {
-        employees = employees.filter((e) => e.id !== emp.id);
+      message: `Remove ${emp.name} from records?`,
+      confirmText: "Delete",
+      onConfirm: async () => {
+        const response = await api.del(`/api/employees/${emp.id}`);
+        employees = employees.filter((row) => row.id !== emp.id);
+        if (response.ok) Toast.show("success", "Employee deleted.");
+        loadEmployees(false);
       }
-      modal.close();
-      loadEmployees(false);
     });
-  }
+  };
 
-  async function loadEmployees(fetchRemote = true) {
+  const renderStats = () => {
+    Utils.el("#statActive").textContent = employees.filter((emp) => emp.status === "Active").length;
+    Utils.el("#statNew").textContent = employees.filter((emp) => emp.join_date >= "2023-01-01").length;
+    Utils.el("#statManagers").textContent = employees.filter((emp) => emp.designation?.toLowerCase().includes("manager")).length;
+  };
+
+  const loadEmployees = async (fetchRemote = true) => {
     const query = {
-      search: document.getElementById("searchInput").value,
-      department: document.getElementById("departmentFilter").value,
-      designation: document.getElementById("designationFilter").value,
-      status: document.getElementById("statusFilter").value,
+      search: Utils.el("#searchInput").value,
+      department: Utils.el("#departmentFilter").value,
+      designation: Utils.el("#designationFilter").value,
+      status: Utils.el("#statusFilter").value,
       page,
       page_size: pageSize,
-      sort_by: document.getElementById("sortBy").value,
+      sort_by: Utils.el("#sortBy").value,
       sort_dir: "asc"
     };
 
     if (fetchRemote) {
-      try {
-        const data = await API.request("/api/employees", { query });
-        employees = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : fallbackEmployees;
-      } catch (err) {
+      Loader.show(employeeTable);
+      const response = await api.get("/api/employees", query);
+      if (response.ok) {
+        const data = response.data || {};
+        employees = Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : fallbackEmployees;
+      } else {
         employees = fallbackEmployees;
       }
+      Loader.hide(employeeTable);
     }
 
-    const start = (page - 1) * pageSize;
-    const rows = employees.slice(start, start + pageSize);
-    employeeCount.textContent = `${employees.length} records`;
+    const total = employees.length;
+    const rows = employees.slice((page - 1) * pageSize, page * pageSize);
+    employeeCount.textContent = `${total} records`;
     renderTable(rows);
-    renderPagination(employees.length);
-  }
+    renderPagination(total);
+    renderStats();
+  };
 
-  document.getElementById("btnAddEmployee").addEventListener("click", () => openEmployeeModal());
-  document.getElementById("btnExport").addEventListener("click", () => Components.toast({
-    title: "Export queued",
-    message: "CSV export will be available shortly.",
-    type: "info"
-  }));
+  Utils.el("#btnAddEmployee")?.addEventListener("click", () => openEmployeeModal());
+  Utils.el("#btnExport")?.addEventListener("click", () => Toast.show("info", "CSV export queued."));
+
+  const searchHandler = Utils.debounce(() => {
+    page = 1;
+    loadEmployees();
+  }, 400);
 
   ["searchInput", "departmentFilter", "designationFilter", "statusFilter", "sortBy"].forEach((id) => {
-    document.getElementById(id).addEventListener("change", () => {
-      page = 1;
-      loadEmployees();
-    });
+    Utils.el(`#${id}`)?.addEventListener("input", searchHandler);
+    Utils.el(`#${id}`)?.addEventListener("change", searchHandler);
   });
 
-  employeeTable.addEventListener("click", (e) => {
-    const editId = e.target.closest("button[data-edit]")?.getAttribute("data-edit");
-    const deleteId = e.target.closest("button[data-delete]")?.getAttribute("data-delete");
+  employeeTable.addEventListener("click", (event) => {
+    const editId = event.target.closest("button[data-edit]")?.dataset.edit;
+    const deleteId = event.target.closest("button[data-delete]")?.dataset.delete;
     if (editId) {
-      const emp = employees.find((r) => String(r.id) === editId);
+      const emp = employees.find((row) => String(row.id) === editId);
       if (emp) openEmployeeModal({ mode: "edit", data: emp });
     }
     if (deleteId) {
-      const emp = employees.find((r) => String(r.id) === deleteId);
+      const emp = employees.find((row) => String(row.id) === deleteId);
       if (emp) openDeleteModal(emp);
     }
   });

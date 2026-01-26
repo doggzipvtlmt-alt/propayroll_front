@@ -1,108 +1,94 @@
 (function () {
-  Components.mountLayout({ activeNav: "roles" });
+  Utils.renderLayout();
 
-  const content = document.getElementById("pageContent");
+  const content = Utils.el("#pageContent");
   content.innerHTML = `
     <div class="page-title">
       <div>
-        <div class="breadcrumb">Office OS / Roles</div>
-        <h1>Role Control Center</h1>
-        <p class="muted">Define access scopes and approval authority across modules.</p>
+        <div class="breadcrumb">Admin / Roles</div>
+        <h1>Roles & Permissions</h1>
+        <p class="muted">Define access levels and permission sets for Office OS.</p>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn primary" id="btnNewRole">➕ New Role</button>
-      </div>
+      <button class="btn primary" id="btnAddRole">Add Role</button>
     </div>
 
     <div class="grid two">
       <div class="card">
-        <div class="hd"><h3>Role Filters</h3><span class="hint">Access levels</span></div>
-        <div class="bd form-grid">
-          <div>
-            <label>Search</label>
-            <input class="input" id="roleSearch" placeholder="Role name" />
-          </div>
-          <div>
-            <label>Scope</label>
-            <select id="roleScope">
-              <option value="">All Scopes</option>
-              <option>Admin</option>
-              <option>Manager</option>
-              <option>Employee</option>
-            </select>
-          </div>
+        <div class="hd"><h3>Role Summary</h3><span class="hint">Access overview</span></div>
+        <div class="grid three">
+          <div><strong id="roleCount">0</strong><p class="muted">Roles</p></div>
+          <div><strong>24</strong><p class="muted">Permissions</p></div>
+          <div><strong>8</strong><p class="muted">Admin Workflows</p></div>
         </div>
       </div>
       <div class="card">
-        <div class="hd"><h3>Policy Highlights</h3><span class="hint">Summary</span></div>
-        <div class="bd">
-          <ul class="help-list">
-            <li>Admins can view audit logs and vault records.</li>
-            <li>Managers can approve leave and attendance changes.</li>
-            <li>Employees have read access to their own profiles.</li>
-          </ul>
-        </div>
+        <div class="hd"><h3>Best Practices</h3><span class="hint">Security guidance</span></div>
+        <ul class="help-list">
+          <li>Review roles quarterly for least privilege.</li>
+          <li>Separate approval and payroll permissions.</li>
+          <li>Enable audit logging for privileged roles.</li>
+        </ul>
       </div>
     </div>
 
     <div class="card">
-      <div class="hd"><h3>Roles</h3><span class="hint" id="roleCount">0 roles</span></div>
-      <div class="bd" id="roleTable">${Components.loader("Loading roles...")}</div>
+      <div class="hd"><h3>Roles</h3><span class="hint">Role library</span></div>
+      <div id="roleTable"></div>
     </div>
   `;
 
-  const fallbackRoles = Utils.sampleRange(10, (i) => ({
-    id: i + 1,
-    name: i % 3 === 0 ? "Admin" : i % 3 === 1 ? "Manager" : "Employee",
-    scope: i % 2 === 0 ? "Global" : "Department",
-    approvals: i % 2 === 0 ? "All" : "Team",
-    members: 8 + i
-  }));
+  const fallbackRoles = [
+    { id: 1, name: "MD", scope: "All Modules", users: 2, status: "Active" },
+    { id: 2, name: "HR", scope: "People + Leaves", users: 6, status: "Active" },
+    { id: 3, name: "ADMIN", scope: "System", users: 3, status: "Active" },
+    { id: 4, name: "MANAGER", scope: "Approvals", users: 12, status: "Active" },
+    { id: 5, name: "EMPLOYEE", scope: "Self Service", users: 185, status: "Active" }
+  ];
 
   let roles = [];
+  const roleTable = Utils.el("#roleTable");
 
-  const roleTable = document.getElementById("roleTable");
-  const roleCount = document.getElementById("roleCount");
-
-  function renderTable(rows) {
+  const renderTable = () => {
     const columns = [
       { key: "name", label: "Role" },
       { key: "scope", label: "Scope" },
-      { key: "approvals", label: "Approvals" },
-      { key: "members", label: "Members" }
+      { key: "users", label: "Users" },
+      { key: "status", label: "Status", render: (r) => Badge.render(r.status) }
     ];
-    roleTable.innerHTML = Components.table({ columns, rows, emptyText: "No roles configured." });
-  }
 
-  function applyFilters() {
-    const search = document.getElementById("roleSearch").value.toLowerCase();
-    const scope = document.getElementById("roleScope").value;
-    const filtered = roles.filter((row) => {
-      const matchesSearch = !search || row.name.toLowerCase().includes(search);
-      const matchesScope = !scope || row.name === scope || row.scope === scope;
-      return matchesSearch && matchesScope;
+    Table.render(roleTable, {
+      columns,
+      rows: roles,
+      rowActions: (row) => `
+        <div style="display:flex; gap:6px;">
+          <button class="btn small" data-edit="${row.id}">Edit</button>
+          <button class="btn small" data-archive="${row.id}">Archive</button>
+        </div>
+      `,
+      emptyText: "No roles configured."
     });
-    roleCount.textContent = `${filtered.length} roles`;
-    renderTable(filtered);
-  }
+    Utils.el("#roleCount").textContent = roles.length;
+  };
 
-  async function init() {
-    try {
-      const data = await API.request("/api/roles");
-      roles = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : fallbackRoles;
-    } catch (err) {
-      roles = fallbackRoles;
+  const loadRoles = async () => {
+    Loader.show(roleTable);
+    const response = await api.get("/api/roles");
+    roles = response.ok ? (response.data?.items || response.data || []) : fallbackRoles;
+    if (!roles.length) roles = fallbackRoles;
+    renderTable();
+    Loader.hide(roleTable);
+  };
+
+  Utils.el("#btnAddRole")?.addEventListener("click", () => Toast.show("info", "Role creation wizard coming soon."));
+
+  roleTable.addEventListener("click", (event) => {
+    if (event.target.closest("button[data-edit]")) {
+      Toast.show("info", "Edit role permissions in the admin console.");
     }
-    applyFilters();
-  }
-
-  document.getElementById("btnNewRole").addEventListener("click", () => {
-    Components.toast({ title: "Role template", message: "Role builder coming soon.", type: "info" });
+    if (event.target.closest("button[data-archive]")) {
+      Toast.show("success", "Role archived.");
+    }
   });
 
-  ["roleSearch", "roleScope"].forEach((id) => {
-    document.getElementById(id).addEventListener("input", applyFilters);
-  });
-
-  init();
+  loadRoles();
 })();

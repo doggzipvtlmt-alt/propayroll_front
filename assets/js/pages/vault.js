@@ -1,88 +1,187 @@
 (function () {
-  Components.mountLayout({ activeNav: "vault" });
+  Utils.renderLayout();
 
-  const content = document.getElementById("pageContent");
+  const content = Utils.el("#pageContent");
   content.innerHTML = `
     <div class="page-title">
       <div>
-        <div class="breadcrumb">Office OS / Vault</div>
-        <h1>Vault Access</h1>
-        <p class="muted">Secure storage for confidential documents and keys.</p>
+        <div class="breadcrumb">Admin / Vault</div>
+        <h1>Secrets Vault</h1>
+        <p class="muted">Manage API keys and credentials securely (write-only).</p>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn primary" id="btnRequestAccess">Request Access</button>
-      </div>
+      <button class="btn primary" id="btnAddSecret">Add Secret</button>
     </div>
 
-    <div class="grid two">
-      <div class="card">
-        <div class="hd"><h3>Vault Items</h3><span class="hint" id="vaultCount">0 items</span></div>
-        <div class="bd" id="vaultTable">${Components.loader("Loading vault items...")}</div>
+    <div class="grid three">
+      <div class="card"><h3 id="vaultTotal">0</h3><p class="muted">Secrets Stored</p></div>
+      <div class="card"><h3>3</h3><p class="muted">Rotations Due</p></div>
+      <div class="card"><h3>100%</h3><p class="muted">Encryption Coverage</p></div>
+    </div>
+
+    <div class="split">
+      <div>
+        <div class="card">
+          <div class="hd"><h3>Filters</h3><span class="hint">Search secrets</span></div>
+          <div class="form-grid">
+            <div>
+              <label>Search</label>
+              <input class="input" id="vaultSearch" placeholder="Service or key name" />
+            </div>
+            <div>
+              <label>Category</label>
+              <select id="vaultCategory">
+                <option value="">All</option>
+                <option>Payroll</option>
+                <option>HRIS</option>
+                <option>Infrastructure</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:24px;">
+          <div class="hd"><h3>Secrets</h3><span class="hint" id="vaultCount">0 records</span></div>
+          <div id="vaultTable"></div>
+        </div>
       </div>
-      <div class="card">
-        <div class="hd"><h3>Security Overview</h3><span class="hint">Compliance</span></div>
-        <div class="bd">
+      <div>
+        <div class="card">
+          <div class="hd"><h3>Best Practices</h3><span class="hint">Security</span></div>
           <ul class="help-list">
-            <li>All vault access is logged in audit trails.</li>
-            <li>Rotate credentials every 90 days.</li>
-            <li>Use role-based access controls for sensitive data.</li>
+            <li>Rotate production credentials every 90 days.</li>
+            <li>Use separate secrets per environment.</li>
+            <li>Limit vault access to Admin roles.</li>
           </ul>
         </div>
       </div>
     </div>
-
-    <div class="card">
-      <div class="hd"><h3>Help Tips</h3><span class="hint">Vault operations</span></div>
-      <div class="bd">
-        <ul class="help-list">
-          <li>Store contracts, compliance docs, and payroll keys.</li>
-          <li>Use tags to make sensitive files searchable.</li>
-          <li>Download requests require manager approval.</li>
-        </ul>
-      </div>
-    </div>
   `;
 
-  const fallbackVault = Utils.sampleRange(10, (i) => ({
+  const fallbackVault = Array.from({ length: 10 }, (_, i) => ({
     id: i + 1,
-    name: i % 2 === 0 ? "Payroll Credentials" : "Vendor Contract",
-    category: i % 2 === 0 ? "Credentials" : "Contracts",
-    owner: i % 2 === 0 ? "Finance" : "Legal",
-    updated: `2024-02-${String((i % 9) + 1).padStart(2, "0")}`,
-    status: i % 3 === 0 ? "restricted" : "active"
+    name: i % 2 === 0 ? "Payroll API Key" : "HRIS Client Secret",
+    category: i % 3 === 0 ? "Payroll" : i % 3 === 1 ? "HRIS" : "Infrastructure",
+    owner: i % 2 === 0 ? "Finance" : "IT",
+    updated_at: `2023-09-${12 + i}`
   }));
 
-  let vaultItems = [];
+  let secrets = [];
+  const tableEl = Utils.el("#vaultTable");
 
-  const vaultTable = document.getElementById("vaultTable");
-  const vaultCount = document.getElementById("vaultCount");
+  const maskSecret = () => "••••••••••";
 
-  function renderTable(rows) {
+  const renderTable = () => {
     const columns = [
-      { key: "name", label: "Item" },
+      { key: "name", label: "Secret" },
       { key: "category", label: "Category" },
       { key: "owner", label: "Owner" },
-      { key: "updated", label: "Last Updated", render: (r) => Utils.fmtDate(r.updated) },
-      { key: "status", label: "Status", render: (r) => Components.badge(r.status === "restricted" ? "restricted" : r.status, r.status === "restricted" ? "warn" : "approved") }
+      { key: "updated_at", label: "Updated", render: (r) => Utils.formatDate(r.updated_at) },
+      { key: "masked", label: "Value", render: () => maskSecret() }
     ];
 
-    vaultTable.innerHTML = Components.table({ columns, rows, emptyText: "No vault items available." });
-  }
+    Table.render(tableEl, {
+      columns,
+      rows: secrets,
+      rowActions: (row) => `
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn small" data-edit="${row.id}">Edit</button>
+          <button class="btn small" data-rotate="${row.id}">Reset Secret</button>
+          <button class="btn small" data-delete="${row.id}">Delete</button>
+        </div>
+      `,
+      emptyText: "No secrets configured."
+    });
+    Utils.el("#vaultTotal").textContent = secrets.length;
+    Utils.el("#vaultCount").textContent = `${secrets.length} records`;
+  };
 
-  async function init() {
-    try {
-      const data = await API.request("/api/vault");
-      vaultItems = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : fallbackVault;
-    } catch (err) {
-      vaultItems = fallbackVault;
+  const openSecretModal = (mode, data = {}) => {
+    Modal.open("vault", `
+      <form id="vaultForm" class="form-grid">
+        <div>
+          <label>Secret Name</label>
+          <input class="input" name="name" value="${Utils.escapeHtml(data.name || "")}" required />
+        </div>
+        <div>
+          <label>Category</label>
+          <select name="category">
+            <option ${data.category === "Payroll" ? "selected" : ""}>Payroll</option>
+            <option ${data.category === "HRIS" ? "selected" : ""}>HRIS</option>
+            <option ${data.category === "Infrastructure" ? "selected" : ""}>Infrastructure</option>
+          </select>
+        </div>
+        <div>
+          <label>Owner</label>
+          <input class="input" name="owner" value="${Utils.escapeHtml(data.owner || "")}" />
+        </div>
+        <div>
+          <label>Secret Value</label>
+          <input class="input" name="secret" placeholder="Enter new value" />
+        </div>
+      </form>
+      <p class="hint">Secrets are write-only. Stored values are masked.</p>
+    `, {
+      title: mode === "edit" ? "Edit Secret" : "Add Secret",
+      footer: `
+        <button class="btn" data-close>Cancel</button>
+        <button class="btn primary" id="saveSecret">Save</button>
+      `
+    });
+
+    Utils.el("#saveSecret")?.addEventListener("click", async () => {
+      const payload = Object.fromEntries(new FormData(Utils.el("#vaultForm")).entries());
+      if (mode === "edit") {
+        await api.put(`/api/vault/${data.id}`, payload);
+        secrets = secrets.map((row) => row.id === data.id ? { ...row, ...payload } : row);
+      } else {
+        const response = await api.post("/api/vault", payload);
+        secrets = [response.ok ? response.data : { id: Date.now(), ...payload }, ...secrets];
+      }
+      Toast.show("success", "Secret saved.");
+      Modal.close("vault");
+      renderTable();
+    });
+  };
+
+  const loadVault = async () => {
+    const query = {
+      search: Utils.el("#vaultSearch").value,
+      category: Utils.el("#vaultCategory").value
+    };
+    Loader.show(tableEl);
+    const response = await api.get("/api/vault", query);
+    secrets = response.ok ? (response.data?.items || response.data || []) : fallbackVault;
+    if (!secrets.length) secrets = fallbackVault;
+    renderTable();
+    Loader.hide(tableEl);
+  };
+
+  Utils.el("#btnAddSecret")?.addEventListener("click", () => openSecretModal("add"));
+
+  tableEl.addEventListener("click", async (event) => {
+    const editId = event.target.closest("button[data-edit]")?.dataset.edit;
+    const rotateId = event.target.closest("button[data-rotate]")?.dataset.rotate;
+    const deleteId = event.target.closest("button[data-delete]")?.dataset.delete;
+    if (editId) {
+      const item = secrets.find((row) => String(row.id) === editId);
+      if (item) openSecretModal("edit", item);
     }
-    vaultCount.textContent = `${vaultItems.length} items`;
-    renderTable(vaultItems);
-  }
-
-  document.getElementById("btnRequestAccess").addEventListener("click", () => {
-    Components.toast({ title: "Access requested", message: "Vault access request submitted.", type: "success" });
+    if (rotateId) {
+      await api.put(`/api/vault/${rotateId}/reset-secret`, {});
+      Toast.show("success", "Secret rotated.");
+    }
+    if (deleteId) {
+      await api.del(`/api/vault/${deleteId}`);
+      secrets = secrets.filter((row) => String(row.id) !== deleteId);
+      renderTable();
+      Toast.show("success", "Secret deleted.");
+    }
   });
 
-  init();
+  ["vaultSearch", "vaultCategory"].forEach((id) => {
+    Utils.el(`#${id}`)?.addEventListener("input", Utils.debounce(loadVault, 400));
+    Utils.el(`#${id}`)?.addEventListener("change", loadVault);
+  });
+
+  loadVault();
 })();

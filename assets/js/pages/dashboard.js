@@ -1,18 +1,17 @@
 (function () {
-  Components.mountLayout({ activeNav: "dashboard" });
+  Utils.renderLayout();
 
-  const content = document.getElementById("pageContent");
+  const content = Utils.el("#pageContent");
   content.innerHTML = `
     <div class="page-title">
       <div>
-        <div class="breadcrumb">Home / Dashboard</div>
-        <h1>Executive Dashboard</h1>
-        <p class="muted">Real-time pulse across people, leave, and attendance operations.</p>
+        <div class="breadcrumb">Overview / Dashboard</div>
+        <h1>Office OS Command Center</h1>
+        <p class="muted">Track HR, attendance, and operational health across teams in one place.</p>
       </div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <a class="btn primary" href="employees.html">➕ Add Employee</a>
-        <a class="btn" href="leaves.html">📝 Apply Leave</a>
-        <a class="btn" href="attendance.html">✅ Mark Attendance</a>
+        <button class="btn primary" id="btnQuickLeave">Apply Leave</button>
+        <button class="btn" id="btnQuickOnboard">Start Onboarding</button>
       </div>
     </div>
 
@@ -22,145 +21,158 @@
       <div class="card">
         <div class="hd">
           <h3>Attendance Trend</h3>
-          <span class="hint">Last 7 days</span>
+          <span class="hint">Last 7 working days</span>
         </div>
-        <div class="bd">
-          <div class="bars" id="attendanceBars"></div>
-        </div>
+        <div class="bars" id="attendanceChart"></div>
       </div>
       <div class="card">
         <div class="hd">
-          <h3>Announcements</h3>
-          <span class="hint">Company-wide updates</span>
+          <h3>Leave Distribution</h3>
+          <span class="hint">By leave type</span>
         </div>
-        <div class="bd" id="announcements"></div>
+        <div class="bars" id="leaveChart"></div>
       </div>
     </div>
 
-    <div class="grid two">
-      <div class="card">
-        <div class="hd">
-          <h3>Recent Activity</h3>
-          <span class="hint">Live system feed</span>
+    <div class="split">
+      <div>
+        <div class="card">
+          <div class="hd">
+            <h3>Recent Activity</h3>
+            <span class="hint">Latest updates from HR and managers</span>
+          </div>
+          <div class="timeline" id="activityFeed"></div>
         </div>
-        <div class="bd" id="activityFeed"></div>
+        <div class="card" style="margin-top:24px;">
+          <div class="hd">
+            <h3>Announcements</h3>
+            <span class="hint">Policy updates & reminders</span>
+          </div>
+          <div class="grid" id="announcementList"></div>
+        </div>
       </div>
-      <div class="card">
-        <div class="hd">
-          <h3>Help Tips</h3>
-          <span class="hint">Quick guidance</span>
+      <div>
+        <div class="card">
+          <div class="hd">
+            <h3>Quick Actions</h3>
+            <span class="hint">Jump to frequent workflows</span>
+          </div>
+          <div class="grid">
+            <button class="btn" id="btnViewApprovals">Review Approvals</button>
+            <button class="btn" id="btnMarkAttendance">Mark Attendance</button>
+            <button class="btn" id="btnOpenVault">Open Vault</button>
+          </div>
         </div>
-        <div class="bd" id="helpTips"></div>
-        <div class="ft">
-          <span class="muted">Need more? Explore the Office OS modules.</span>
-          <a class="btn small" href="users.html">Open Users →</a>
+        <div class="card" style="margin-top:24px;">
+          <div class="hd">
+            <h3>Help Tips</h3>
+            <span class="hint">Operational best practices</span>
+          </div>
+          <ul class="help-list">
+            <li>Update employee managers weekly to keep org charts accurate.</li>
+            <li>Run payroll checks 2 days before the closing date.</li>
+            <li>Use approvals to centralize compliance workflows.</li>
+          </ul>
         </div>
       </div>
     </div>
   `;
 
   const fallbackSummary = {
-    total_employees: 128,
-    on_leave_today: 6,
-    attendance_rate: 94,
-    open_positions: 12,
-    approvals_pending: 9,
-    notifications: 18
+    total_employees: 218,
+    active_employees: 204,
+    pending_leaves: 12,
+    open_positions: 6,
+    attendance_rate: 96,
+    payroll_ready: "On Track"
   };
 
-  const fallbackActivity = Utils.sampleRange(6, (i) => ({
-    title: `Approval ${i % 2 === 0 ? "completed" : "created"}`,
-    detail: "Leave request routed for manager review.",
+  const fallbackAttendance = [92, 95, 97, 94, 96, 93, 98];
+  const fallbackLeaves = [32, 18, 12, 9];
+
+  const activityItems = Array.from({ length: 10 }, (_, i) => ({
+    title: i % 2 === 0 ? "Leave request approved" : "Profile update submitted",
+    detail: i % 2 === 0 ? "Finance team approved sick leave" : "Updated bank details for payroll",
     time: `${i + 1}h ago`
   }));
 
-  const fallbackAnnouncements = [
-    { title: "Performance cycle opens", detail: "Self reviews open Friday." },
-    { title: "Office reopening", detail: "Hybrid schedule policy updated." },
-    { title: "Learning week", detail: "New compliance courses assigned." }
+  const announcements = [
+    { title: "Holiday Schedule", body: "Office closed for Founder’s Day on Oct 14." },
+    { title: "Policy Update", body: "Remote work guidelines updated for Q4." },
+    { title: "Security", body: "Enable MFA for all payroll users by Friday." }
   ];
 
-  const fallbackBars = [72, 84, 93, 76, 88, 91, 86];
+  const kpiGrid = Utils.el("#kpiGrid");
+  const attendanceChart = Utils.el("#attendanceChart");
+  const leaveChart = Utils.el("#leaveChart");
+  const activityFeed = Utils.el("#activityFeed");
+  const announcementList = Utils.el("#announcementList");
 
-  const kpiGrid = document.getElementById("kpiGrid");
-  const bars = document.getElementById("attendanceBars");
-  const announcements = document.getElementById("announcements");
-  const activityFeed = document.getElementById("activityFeed");
-  const helpTips = document.getElementById("helpTips");
-
-  function renderKpis(summary) {
-    const items = [
-      { label: "Total Employees", value: summary.total_employees, hint: "Active headcount" },
-      { label: "On Leave Today", value: summary.on_leave_today, hint: "Pending coverage" },
-      { label: "Attendance Rate", value: `${summary.attendance_rate}%`, hint: "Last 7 days" },
-      { label: "Open Positions", value: summary.open_positions, hint: "Hiring pipeline" },
-      { label: "Approvals Pending", value: summary.approvals_pending, hint: "Awaiting action" },
-      { label: "Notifications", value: summary.notifications, hint: "Unread alerts" }
-    ];
-    kpiGrid.innerHTML = items.map((item) => `
+  const renderKPIs = (summary) => {
+    kpiGrid.innerHTML = `
       <div class="card">
-        <div class="hd">
-          <h3>${Utils.escapeHtml(item.label)}</h3>
-        </div>
-        <div class="bd">
-          <div style="font-size:28px; font-weight:700;">${Utils.escapeHtml(item.value)}</div>
-          <div class="hint">${Utils.escapeHtml(item.hint)}</div>
-        </div>
+        <div class="hd"><h3>Total Employees</h3><span class="hint">All records</span></div>
+        <h2>${summary.total_employees}</h2>
+        <p class="muted">${summary.active_employees} active</p>
       </div>
-    `).join("");
-  }
-
-  function renderBars(values) {
-    bars.innerHTML = values.map((value) => `
-      <div class="bar"><span style="width:${value}%"></span></div>
-    `).join("");
-  }
-
-  function renderAnnouncements(list) {
-    announcements.innerHTML = list.map((item) => `
-      <div class="mini-card" style="margin-bottom:10px;">
-        <strong>${Utils.escapeHtml(item.title)}</strong>
-        <p class="muted">${Utils.escapeHtml(item.detail)}</p>
+      <div class="card">
+        <div class="hd"><h3>Pending Leaves</h3><span class="hint">Need review</span></div>
+        <h2>${summary.pending_leaves}</h2>
+        <p class="muted">Auto-escalate in 48h</p>
       </div>
-    `).join("");
-  }
+      <div class="card">
+        <div class="hd"><h3>Attendance Rate</h3><span class="hint">Week to date</span></div>
+        <h2>${summary.attendance_rate}%</h2>
+        <p class="muted">${summary.payroll_ready} for payroll</p>
+      </div>
+    `;
+  };
 
-  function renderActivity(list) {
-    activityFeed.innerHTML = list.map((item) => `
+  const renderBars = (el, data) => {
+    el.innerHTML = data.map((val) => `
+      <div class="bar"><span style="width:${val}%"></span></div>
+    `).join("");
+  };
+
+  const renderActivity = () => {
+    activityFeed.innerHTML = activityItems.map((item) => `
       <div class="timeline-item">
         <div class="timeline-dot"></div>
         <div>
           <strong>${Utils.escapeHtml(item.title)}</strong>
           <p class="muted">${Utils.escapeHtml(item.detail)}</p>
-          <div class="hint">${Utils.escapeHtml(item.time)}</div>
+          <span class="hint">${Utils.escapeHtml(item.time)}</span>
         </div>
       </div>
     `).join("");
-  }
+  };
 
-  function renderHelp() {
-    helpTips.innerHTML = `
-      <ul class="help-list">
-        <li>Use the search bar to jump between employees, approvals, and documents.</li>
-        <li>Monitor approvals and leave queues daily to reduce turnaround time.</li>
-        <li>Audit logs are visible to MD/Admin roles only.</li>
-      </ul>
-    `;
-  }
+  const renderAnnouncements = () => {
+    announcementList.innerHTML = announcements.map((note) => `
+      <div class="notice">
+        <strong>${Utils.escapeHtml(note.title)}</strong>
+        <p class="muted">${Utils.escapeHtml(note.body)}</p>
+      </div>
+    `).join("");
+  };
 
-  async function init() {
-    let summary = fallbackSummary;
-    try {
-      summary = await API.request("/api/dashboard/summary");
-    } catch (err) {
-      summary = fallbackSummary;
-    }
-    renderKpis(summary);
-    renderBars(fallbackBars);
-    renderAnnouncements(fallbackAnnouncements);
-    renderActivity(fallbackActivity);
-    renderHelp();
-  }
+  const loadSummary = async () => {
+    Loader.show(kpiGrid);
+    const response = await api.get("/api/dashboard/summary");
+    const summary = response.ok ? response.data : fallbackSummary;
+    renderKPIs(summary || fallbackSummary);
+    Loader.hide(kpiGrid);
+  };
 
-  init();
+  renderBars(attendanceChart, fallbackAttendance);
+  renderBars(leaveChart, fallbackLeaves);
+  renderActivity();
+  renderAnnouncements();
+  loadSummary();
+
+  Utils.el("#btnQuickLeave")?.addEventListener("click", () => window.location.href = "leaves.html");
+  Utils.el("#btnQuickOnboard")?.addEventListener("click", () => Toast.show("info", "Onboarding wizard coming soon."));
+  Utils.el("#btnViewApprovals")?.addEventListener("click", () => window.location.href = "approvals.html");
+  Utils.el("#btnMarkAttendance")?.addEventListener("click", () => window.location.href = "attendance.html");
+  Utils.el("#btnOpenVault")?.addEventListener("click", () => window.location.href = "vault.html");
 })();
