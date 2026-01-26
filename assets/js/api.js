@@ -34,14 +34,17 @@
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
     const url = buildUrl(path, query);
-    const token = window.Utils?.getSession?.().access_token;
+    const isApiPath = path.startsWith("/api/");
+    const isAuthLogin = path === "/api/auth/login";
+    const shouldAttachAuth = isApiPath && !isAuthLogin;
+    const token = shouldAttachAuth ? window.Utils?.getSession?.().access_token : null;
 
     try {
       const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(shouldAttachAuth && token ? { Authorization: `Bearer ${token}` } : {}),
           ...(headers || {})
         },
         body: body ? JSON.stringify(body) : null,
@@ -50,12 +53,19 @@
 
       const text = await res.text();
       const json = safeJson(text);
+      const message = json?.message || json?.error || "Request failed";
       lastRequestId = json.request_id || null;
       window.LAST_REQUEST_ID = lastRequestId;
       window.Layout?.updateRequestId?.(lastRequestId);
 
+      if (shouldAttachAuth && res.status === 401) {
+        window.Utils?.clearSession?.();
+        window.location.href = "login.html";
+        return { ok: false, data: fallbackData, request_id: lastRequestId };
+      }
+
       if (!res.ok || json.ok !== true) {
-        Toast.show("error", json?.message || json?.error || "Request failed", { title: "API Error" });
+        Toast.show("error", message, { title: "API Error" });
         return { ok: false, data: fallbackData, request_id: lastRequestId };
       }
 
