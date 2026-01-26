@@ -54,9 +54,9 @@
 
   const getSession = () => storage.get();
 
-  const setSession = ({ token, user, company_id }) => {
+  const setSession = ({ access_token, user, company_id }) => {
     storage.set({
-      token,
+      access_token,
       user,
       company_id
     });
@@ -77,7 +77,7 @@
 
   const ensureAuthenticated = async () => {
     const session = getSession();
-    if (!session?.token) {
+    if (!session?.access_token) {
       window.location.href = "login.html";
       return false;
     }

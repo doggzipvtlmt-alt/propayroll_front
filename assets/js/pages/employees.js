@@ -2,7 +2,7 @@
   const ready = await Utils.ensureAuthenticated();
   if (!ready) return;
 
-  const canManage = Utils.hasRole(["HR", "MD"]);
+  const canManage = Utils.hasRole(["HR", "MD", "ADMIN"]);
 
   const content = Layout.render({
     title: "Employee Directory",

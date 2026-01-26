@@ -34,7 +34,7 @@
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
     const url = buildUrl(path, query);
-    const token = window.Utils?.getSession?.().token;
+    const token = window.Utils?.getSession?.().access_token;
 
     try {
       const res = await fetch(url, {

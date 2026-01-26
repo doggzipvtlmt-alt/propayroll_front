@@ -271,10 +271,10 @@
       const companyId = session?.company_id || session?.user?.company_id || "—";
 
       const navItems = [
-        { label: "Dashboard", href: "index.html", icon: "🏠", roles: ["MD", "HR", "ADMIN", "MANAGER", "EMPLOYEE"] },
-        { label: "Employees", href: "employees.html", icon: "👥", roles: ["MD", "HR", "ADMIN", "MANAGER"] },
-        { label: "Leaves", href: "leaves.html", icon: "🗓️", roles: ["MD", "HR", "ADMIN", "MANAGER", "EMPLOYEE"] },
-        { label: "Attendance", href: "attendance.html", icon: "🕒", roles: ["MD", "HR", "ADMIN", "MANAGER", "EMPLOYEE"] }
+        { label: "Dashboard", href: "index.html", icon: "🏠", roles: ["MD", "HR", "ADMIN", "EMPLOYEE"] },
+        { label: "Employees", href: "employees.html", icon: "👥", roles: ["MD", "HR", "ADMIN"] },
+        { label: "Leaves", href: "leaves.html", icon: "🗓️", roles: ["MD", "HR", "ADMIN", "EMPLOYEE"] },
+        { label: "Attendance", href: "attendance.html", icon: "🕒", roles: ["MD", "HR", "ADMIN", "EMPLOYEE"] }
       ];
       const adminItems = [
         { label: "Users", href: "users.html", icon: "🧑‍💼", roles: ["MD", "ADMIN"] },
@@ -290,9 +290,9 @@
         { label: "Vault", href: "vault.html", icon: "🔐", roles: ["MD", "HR", "ADMIN", "MANAGER", "EMPLOYEE"] }
       ];
       const financeItems = [
-        { label: "Payroll", href: "#", icon: "💳", roles: ["MD", "ADMIN", "HR"] },
-        { label: "Expenses", href: "#", icon: "📒", roles: ["MD", "ADMIN", "HR"] },
-        { label: "Invoices", href: "#", icon: "🧾", roles: ["MD", "ADMIN", "HR"] }
+        { label: "Payroll", href: "#", icon: "💳", roles: ["MD", "ADMIN"] },
+        { label: "Expenses", href: "#", icon: "📒", roles: ["MD", "ADMIN"] },
+        { label: "Invoices", href: "#", icon: "🧾", roles: ["MD", "ADMIN"] }
       ];
 
       const renderNav = (items) => items.map((item) => {
