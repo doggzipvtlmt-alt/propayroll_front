@@ -1,6 +1,6 @@
 (async function () {
   const session = Utils.getSession();
-  if (session?.token) {
+  if (session?.access_token) {
     window.location.href = "index.html";
     return;
   }
@@ -13,9 +13,8 @@
     if (response.ok) {
       const data = response.data || {};
       Utils.setSession({
-        token: data.token,
-        user: data.user || {},
-        company_id: payload.company_id
+        access_token: data.access_token,
+        user: data.user || {}
       });
       Toast.show("success", "Login successful.");
       window.location.href = "index.html";
