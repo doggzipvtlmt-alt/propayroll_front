@@ -1,45 +1,68 @@
 (function () {
-  const DEFAULT_TIMEOUT_MS = 15000;
+  const DEFAULT_TIMEOUT_MS = 12000;
 
-  function withTimeout(promiseFactory, ms = DEFAULT_TIMEOUT_MS) {
+  window.APP_STATE = window.APP_STATE || { last_request_id: null };
+
+  async function withTimeout(promiseFactory, ms = DEFAULT_TIMEOUT_MS) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), ms);
-    return promiseFactory(controller.signal).finally(() => clearTimeout(id));
+    try {
+      return await promiseFactory(controller.signal);
+    } finally {
+      clearTimeout(id);
+    }
   }
 
-  async function request(path, { method = "GET", body = null, headers = {} } = {}) {
-    const base = window.APP_CONFIG?.API_BASE_URL || "";
-    const url = base.replace(/\/$/, "") + path;
-
-    const finalHeaders = {
+  function buildHeaders(extra = {}) {
+    const config = window.APP_CONFIG || {};
+    return {
       "Content-Type": "application/json",
-      ...(window.APP_CONFIG?.DEFAULT_HEADERS || {}),
-      ...headers
+      "X-COMPANY-ID": config.COMPANY_ID,
+      "X-USER-ID": config.USER_ID,
+      "X-ROLE": config.ROLE,
+      ...extra
     };
+  }
 
-    return await withTimeout(async (signal) => {
-      const res = await fetch(url, {
-        method,
-        headers: finalHeaders,
-        body: body ? JSON.stringify(body) : null,
-        signal
+  async function request(path, { method = "GET", body = null, query = null, headers = {} } = {}) {
+    const base = window.APP_CONFIG?.API_BASE_URL || "";
+    const queryString = query ? Utils.buildQuery(query) : "";
+    const url = base.replace(/\/$/, "") + path + queryString;
+
+    try {
+      const res = await withTimeout(async (signal) => {
+        return fetch(url, {
+          method,
+          headers: buildHeaders(headers),
+          body: body ? JSON.stringify(body) : null,
+          signal
+        });
       });
 
       const text = await res.text();
-      let data;
-      try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+      const json = text ? JSON.parse(text) : {};
 
-      if (!res.ok) {
-        const msg =
-          (data && data.detail) ? JSON.stringify(data.detail) :
-          (data?.error?.message || res.statusText);
+      window.APP_STATE.last_request_id = json.request_id || null;
+
+      if (!res.ok || json.ok !== true) {
+        const msg = json?.error || json?.message || res.statusText || "Request failed";
         const err = new Error(msg);
         err.status = res.status;
-        err.payload = data;
+        err.payload = json;
         throw err;
       }
-      return data;
-    });
+
+      return json.data;
+    } catch (err) {
+      if (window.Components?.toast) {
+        Components.toast({
+          title: "API Error",
+          message: err.message || "Unable to load data",
+          type: "error"
+        });
+      }
+      throw err;
+    }
   }
 
   window.API = { request };

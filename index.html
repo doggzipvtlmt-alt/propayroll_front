@@ -3,128 +3,16 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>HRMS 0.1 • Dashboard</title>
+  <title>Office OS • Dashboard</title>
   <link rel="stylesheet" href="assets/css/styles.css"/>
 </head>
 <body>
-  <div class="container">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="logo">HR</div>
-        <div class="meta">
-          <div class="title">HRMS 0.1</div>
-          <div class="sub">Office OS • Demo</div>
-        </div>
-      </div>
-
-      <nav class="nav">
-        <a data-nav href="index.html" class="active"><span class="icon">🏠</span> Dashboard</a>
-        <a data-nav href="employees.html"><span class="icon">👥</span> Employees</a>
-        <a data-nav href="leaves.html"><span class="icon">🗓️</span> Leaves</a>
-        <a data-nav href="attendance.html"><span class="icon">🕒</span> Attendance</a>
-        <a data-nav href="settings.html"><span class="icon">⚙️</span> Settings</a>
-      </nav>
-
-      <div class="hint">
-        <h4>Tip</h4>
-        <p>Backend is running on <b>127.0.0.1:8000</b>. You can change it in <code>assets/js/config.js</code>.</p>
-      </div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <div class="left">
-          <button class="hamburger" id="btnSidebar" aria-label="Toggle sidebar">☰</button>
-          <div class="search">
-            🔎 <input id="globalSearch" placeholder="Search employees, leaves, departments…"/>
-            <span class="k">Ctrl K</span>
-          </div>
-        </div>
-
-        <div class="right">
-          <button class="icon-btn" id="btnNoti" aria-label="Notifications">
-            🔔 <span class="dot"></span>
-          </button>
-          <div class="user">
-            <div class="avatar">A</div>
-            <div class="meta">
-              <div class="name">Abhijeet</div>
-              <div class="role">EMPLOYEE</div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <section class="content">
-        <div class="page-title">
-          <div>
-            <h1>Dashboard</h1>
-            <p>Quick snapshot of workforce, leaves, attendance, and HR announcements.</p>
-          </div>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <a class="btn primary" href="employees.html">➕ Add Employee</a>
-            <a class="btn" href="leaves.html">📝 Apply Leave</a>
-            <a class="btn" href="attendance.html">✅ Mark Attendance</a>
-          </div>
-        </div>
-
-        <div class="grid kpis" id="kpiGrid"></div>
-
-        <div class="grid two" style="margin-top:16px;">
-          <div class="card">
-            <div class="hd">
-              <h3>Attendance Trend (Placeholder)</h3>
-              <span class="hint">Last 7 days</span>
-            </div>
-            <div class="bd">
-              <div class="bars" id="attendanceBars"></div>
-              <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-                <span class="chip">Source: /api/attendance</span>
-                <span class="chip">Fallback sample if API empty</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="hd">
-              <h3>Announcements</h3>
-              <span class="hint">HR Notices</span>
-            </div>
-            <div class="bd" id="announcements"></div>
-          </div>
-        </div>
-
-        <div class="grid two" style="margin-top:16px;">
-          <div class="card">
-            <div class="hd">
-              <h3>Recent Activity</h3>
-              <span class="hint">System feed</span>
-            </div>
-            <div class="bd">
-              <div class="timeline" id="activityFeed"></div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="hd">
-              <h3>Quick Help</h3>
-              <span class="hint">How to use</span>
-            </div>
-            <div class="bd" id="helpTips"></div>
-            <div class="ft">
-              <span style="color:rgba(255,255,255,0.65);font-size:12px;">Next: Employees page with table + modals</span>
-              <a class="btn small" href="employees.html">Open Employees →</a>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
+  <div id="app"></div>
 
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/api.js"></script>
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/components.js"></script>
+  <script src="assets/js/api.js"></script>
   <script src="assets/js/pages/dashboard.js"></script>
 </body>
 </html>

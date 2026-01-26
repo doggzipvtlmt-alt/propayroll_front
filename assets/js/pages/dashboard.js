@@ -1,124 +1,166 @@
-(async function () {
-  Utils.setActiveNav();
+(function () {
+  Components.mountLayout({ activeNav: "dashboard" });
 
-  const btnSidebar = Utils.qs("#btnSidebar");
-  if (btnSidebar) btnSidebar.addEventListener("click", () => Utils.toggleSidebar());
-
-  const kpiGrid = Utils.qs("#kpiGrid");
-  const attendanceBars = Utils.qs("#attendanceBars");
-  const activityFeed = Utils.qs("#activityFeed");
-  const announcements = Utils.qs("#announcements");
-  const helpTips = Utils.qs("#helpTips");
-
-  function kpiCard(label, value, hint, right = "") {
-    return `
-      <div class="card">
-        <div class="kpi">
-          <div class="label"><span>${Utils.escapeHtml(label)}</span><span>${right}</span></div>
-          <div class="value">${Utils.escapeHtml(String(value))}</div>
-          <div class="delta">${Utils.escapeHtml(hint)}</div>
-          <div class="spark" aria-hidden="true"></div>
-        </div>
+  const content = document.getElementById("pageContent");
+  content.innerHTML = `
+    <div class="page-title">
+      <div>
+        <div class="breadcrumb">Home / Dashboard</div>
+        <h1>Executive Dashboard</h1>
+        <p class="muted">Real-time pulse across people, leave, and attendance operations.</p>
       </div>
-    `;
-  }
-
-  function barRow(name, pct) {
-    const p = Math.max(0, Math.min(100, pct));
-    return `
-      <div class="bar">
-        <div class="name">${Utils.escapeHtml(name)}</div>
-        <div class="track"><div class="fill" style="width:${p}%"></div></div>
-        <div class="pct">${p}%</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn primary" href="employees.html">➕ Add Employee</a>
+        <a class="btn" href="leaves.html">📝 Apply Leave</a>
+        <a class="btn" href="attendance.html">✅ Mark Attendance</a>
       </div>
-    `;
-  }
-
-  function timelineItem(title, when, desc) {
-    return `
-      <div class="tl-item">
-        <div class="tl-dot"></div>
-        <div class="tl-card">
-          <div class="t">
-            <strong>${Utils.escapeHtml(title)}</strong>
-            <span>${Utils.escapeHtml(when)}</span>
-          </div>
-          <p>${Utils.escapeHtml(desc)}</p>
-        </div>
-      </div>
-    `;
-  }
-
-  function announcementItem(title, badgeHtml, body) {
-    return `
-      <div style="padding:12px;border:1px solid rgba(255,255,255,0.10);border-radius:16px;background:rgba(255,255,255,0.04);margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
-          <strong style="font-size:13px;">${Utils.escapeHtml(title)}</strong>
-          ${badgeHtml}
-        </div>
-        <div style="margin-top:8px;color:rgba(255,255,255,0.65);font-size:12px;line-height:1.5;">
-          ${Utils.escapeHtml(body)}
-        </div>
-      </div>
-    `;
-  }
-
-  // Render static content first (so page is "filled" even before API)
-  kpiGrid.innerHTML =
-    kpiCard("Headcount", "—", "Total employees in directory", Components.badge("Live", "good")) +
-    kpiCard("Present Today", "—", "Based on attendance records", Components.badge("Draft", "gray")) +
-    kpiCard("Pending Leaves", "—", "Requests awaiting approval", Components.badge("Queue", "warn")) +
-    kpiCard("Upcoming Birthdays", "—", "Next 30 days", Components.badge("Info", "gray")) +
-    kpiCard("New Joiners", "—", "Joined in last 30 days", Components.badge("Trend", "good"));
-
-  attendanceBars.innerHTML =
-    barRow("Mon", 65) + barRow("Tue", 72) + barRow("Wed", 58) + barRow("Thu", 80) + barRow("Fri", 74) + barRow("Sat", 22) + barRow("Sun", 10);
-
-  activityFeed.innerHTML =
-    timelineItem("Employee directory updated", "Today", "HR updated employee records and synced department tags for reporting.") +
-    timelineItem("Leave request submitted", "Yesterday", "A leave request was submitted with supporting notes. Pending review.") +
-    timelineItem("Policy notice published", "2 days ago", "Updated attendance policy: grace period and WFH tagging guidance.") +
-    timelineItem("System seed executed", "This week", "Demo data inserted into MongoDB for employees and leave requests.");
-
-  announcements.innerHTML =
-    announcementItem("Payroll cutoff reminder", Components.badge("Important", "warn"), "Please submit attendance corrections and pending leave regularization before the monthly payroll cutoff.") +
-    announcementItem("Office maintenance window", Components.badge("Scheduled", "gray"), "Network maintenance is planned for Saturday 11:00 PM – 1:00 AM. Internal tools may be slow.") +
-    announcementItem("New joiner onboarding", Components.badge("HR", "good"), "Welcome new team members! Managers: complete onboarding checklist and assign Buddy by EOD.");
-
-  helpTips.innerHTML = `
-    <div style="display:grid;gap:10px;">
-      <div class="chip">Use Employees page to manage directory, filters and CRUD actions.</div>
-      <div class="chip">Leaves page supports apply + approve/reject (based on backend capabilities).</div>
-      <div class="chip">Attendance page will show calendar-like view + daily log.</div>
-      <div class="chip">Settings page contains Departments/Designations/Leave Types (some placeholders).</div>
     </div>
-    <div style="margin-top:12px;color:rgba(255,255,255,0.65);font-size:12px;line-height:1.5;">
-      If API is down, the UI will keep working using fallback data. When API is up, KPIs auto-refresh.
+
+    <div class="grid three" id="kpiGrid"></div>
+
+    <div class="grid two">
+      <div class="card">
+        <div class="hd">
+          <h3>Attendance Trend</h3>
+          <span class="hint">Last 7 days</span>
+        </div>
+        <div class="bd">
+          <div class="bars" id="attendanceBars"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="hd">
+          <h3>Announcements</h3>
+          <span class="hint">Company-wide updates</span>
+        </div>
+        <div class="bd" id="announcements"></div>
+      </div>
+    </div>
+
+    <div class="grid two">
+      <div class="card">
+        <div class="hd">
+          <h3>Recent Activity</h3>
+          <span class="hint">Live system feed</span>
+        </div>
+        <div class="bd" id="activityFeed"></div>
+      </div>
+      <div class="card">
+        <div class="hd">
+          <h3>Help Tips</h3>
+          <span class="hint">Quick guidance</span>
+        </div>
+        <div class="bd" id="helpTips"></div>
+        <div class="ft">
+          <span class="muted">Need more? Explore the Office OS modules.</span>
+          <a class="btn small" href="users.html">Open Users →</a>
+        </div>
+      </div>
     </div>
   `;
 
-  // Fetch live summary (if available)
-  try {
-    const res = await API.request("/api/dashboard/summary");
-    // Expect { ok:true, data:{...}, request_id }
-    const s = res?.data || {};
+  const fallbackSummary = {
+    total_employees: 128,
+    on_leave_today: 6,
+    attendance_rate: 94,
+    open_positions: 12,
+    approvals_pending: 9,
+    notifications: 18
+  };
 
-    // If backend returns different keys, still display safely
-    const headcount = s.headcount ?? s.total_employees ?? "—";
-    const present = s.present_today ?? s.present ?? "—";
-    const pendingLeaves = s.pending_leaves ?? s.pending ?? "—";
-    const birthdays = s.upcoming_birthdays ?? s.birthdays ?? "—";
-    const joiners = s.new_joiners ?? s.joiners ?? "—";
+  const fallbackActivity = Utils.sampleRange(6, (i) => ({
+    title: `Approval ${i % 2 === 0 ? "completed" : "created"}`,
+    detail: "Leave request routed for manager review.",
+    time: `${i + 1}h ago`
+  }));
 
-    kpiGrid.innerHTML =
-      kpiCard("Headcount", headcount, "Total employees in directory", Components.badge("Live", "good")) +
-      kpiCard("Present Today", present, "Based on attendance records", Components.badge("Today", "good")) +
-      kpiCard("Pending Leaves", pendingLeaves, "Requests awaiting approval", Components.badge("Queue", "warn")) +
-      kpiCard("Upcoming Birthdays", birthdays, "Next 30 days", Components.badge("Upcoming", "gray")) +
-      kpiCard("New Joiners", joiners, "Joined in last 30 days", Components.badge("Trend", "good"));
+  const fallbackAnnouncements = [
+    { title: "Performance cycle opens", detail: "Self reviews open Friday." },
+    { title: "Office reopening", detail: "Hybrid schedule policy updated." },
+    { title: "Learning week", detail: "New compliance courses assigned." }
+  ];
 
-    Components.toast({ title: "Dashboard updated", message: "Live KPIs loaded from backend.", type: "success" });
-  } catch (e) {
-    Components.toast({ title: "Using demo data", message: "Could not load /api/dashboard/summary. Showing fallback content.", type: "warn" });
+  const fallbackBars = [72, 84, 93, 76, 88, 91, 86];
+
+  const kpiGrid = document.getElementById("kpiGrid");
+  const bars = document.getElementById("attendanceBars");
+  const announcements = document.getElementById("announcements");
+  const activityFeed = document.getElementById("activityFeed");
+  const helpTips = document.getElementById("helpTips");
+
+  function renderKpis(summary) {
+    const items = [
+      { label: "Total Employees", value: summary.total_employees, hint: "Active headcount" },
+      { label: "On Leave Today", value: summary.on_leave_today, hint: "Pending coverage" },
+      { label: "Attendance Rate", value: `${summary.attendance_rate}%`, hint: "Last 7 days" },
+      { label: "Open Positions", value: summary.open_positions, hint: "Hiring pipeline" },
+      { label: "Approvals Pending", value: summary.approvals_pending, hint: "Awaiting action" },
+      { label: "Notifications", value: summary.notifications, hint: "Unread alerts" }
+    ];
+    kpiGrid.innerHTML = items.map((item) => `
+      <div class="card">
+        <div class="hd">
+          <h3>${Utils.escapeHtml(item.label)}</h3>
+        </div>
+        <div class="bd">
+          <div style="font-size:28px; font-weight:700;">${Utils.escapeHtml(item.value)}</div>
+          <div class="hint">${Utils.escapeHtml(item.hint)}</div>
+        </div>
+      </div>
+    `).join("");
   }
+
+  function renderBars(values) {
+    bars.innerHTML = values.map((value) => `
+      <div class="bar"><span style="width:${value}%"></span></div>
+    `).join("");
+  }
+
+  function renderAnnouncements(list) {
+    announcements.innerHTML = list.map((item) => `
+      <div class="mini-card" style="margin-bottom:10px;">
+        <strong>${Utils.escapeHtml(item.title)}</strong>
+        <p class="muted">${Utils.escapeHtml(item.detail)}</p>
+      </div>
+    `).join("");
+  }
+
+  function renderActivity(list) {
+    activityFeed.innerHTML = list.map((item) => `
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div>
+          <strong>${Utils.escapeHtml(item.title)}</strong>
+          <p class="muted">${Utils.escapeHtml(item.detail)}</p>
+          <div class="hint">${Utils.escapeHtml(item.time)}</div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderHelp() {
+    helpTips.innerHTML = `
+      <ul class="help-list">
+        <li>Use the search bar to jump between employees, approvals, and documents.</li>
+        <li>Monitor approvals and leave queues daily to reduce turnaround time.</li>
+        <li>Audit logs are visible to MD/Admin roles only.</li>
+      </ul>
+    `;
+  }
+
+  async function init() {
+    let summary = fallbackSummary;
+    try {
+      summary = await API.request("/api/dashboard/summary");
+    } catch (err) {
+      summary = fallbackSummary;
+    }
+    renderKpis(summary);
+    renderBars(fallbackBars);
+    renderAnnouncements(fallbackAnnouncements);
+    renderActivity(fallbackActivity);
+    renderHelp();
+  }
+
+  init();
 })();
