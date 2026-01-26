@@ -13,10 +13,23 @@
 
   function fmtDate(s) {
     if (!s) return "—";
-    // backend uses strings; show as-is if not parsable
     const d = new Date(s);
-    if (isNaN(d.getTime())) return s;
+    if (Number.isNaN(d.getTime())) return s;
     return d.toLocaleDateString();
+  }
+
+  function fmtDateTime(s) {
+    if (!s) return "—";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleString();
+  }
+
+  function fmtMoney(n) {
+    if (n === null || n === undefined || n === "") return "—";
+    const num = Number(n);
+    if (Number.isNaN(num)) return n;
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(num);
   }
 
   function getParam(name) {
@@ -24,11 +37,21 @@
     return u.searchParams.get(name);
   }
 
-  function setActiveNav() {
-    const file = (location.pathname.split("/").pop() || "index.html").toLowerCase();
-    document.querySelectorAll("[data-nav]").forEach(a => {
-      const match = (a.getAttribute("href") || "").toLowerCase() === file;
+  function buildQuery(params = {}) {
+    const usp = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") return;
+      usp.set(key, value);
+    });
+    const out = usp.toString();
+    return out ? `?${out}` : "";
+  }
+
+  function setActiveNav(active) {
+    document.querySelectorAll("[data-nav]").forEach((a) => {
+      const match = a.getAttribute("data-nav") === active;
       if (match) a.classList.add("active");
+      else a.classList.remove("active");
     });
   }
 
@@ -40,5 +63,21 @@
     else sb.classList.toggle("open");
   }
 
-  window.Utils = { qs, qsa, escapeHtml, fmtDate, getParam, setActiveNav, toggleSidebar };
+  function sampleRange(len, factory) {
+    return Array.from({ length: len }, (_, idx) => factory(idx));
+  }
+
+  window.Utils = {
+    qs,
+    qsa,
+    escapeHtml,
+    fmtDate,
+    fmtDateTime,
+    fmtMoney,
+    getParam,
+    buildQuery,
+    setActiveNav,
+    toggleSidebar,
+    sampleRange
+  };
 })();
