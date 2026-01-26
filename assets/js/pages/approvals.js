@@ -1,113 +1,135 @@
 (function () {
-  Components.mountLayout({ activeNav: "approvals" });
+  Utils.renderLayout();
 
-  const content = document.getElementById("pageContent");
+  const content = Utils.el("#pageContent");
   content.innerHTML = `
     <div class="page-title">
       <div>
-        <div class="breadcrumb">Office OS / Approvals</div>
-        <h1>Approvals Queue</h1>
-        <p class="muted">Track approvals across leave, attendance, and expenses.</p>
-      </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn primary" id="btnBulkApprove">Approve All</button>
+        <div class="breadcrumb">Admin / Approvals</div>
+        <h1>Approval Queue</h1>
+        <p class="muted">Review pending approvals across leave, payroll, and access requests.</p>
       </div>
     </div>
 
-    <div class="card">
-      <div class="hd"><h3>Filters</h3><span class="hint">Queue filters</span></div>
-      <div class="bd form-grid">
-        <div>
-          <label>Status</label>
-          <select id="approvalStatus">
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+    <div class="grid three">
+      <div class="card"><h3 id="pendingCount">0</h3><p class="muted">Pending Items</p></div>
+      <div class="card"><h3>6</h3><p class="muted">Overdue Reviews</p></div>
+      <div class="card"><h3>98%</h3><p class="muted">SLA Compliance</p></div>
+    </div>
+
+    <div class="split">
+      <div>
+        <div class="card">
+          <div class="hd"><h3>Filters</h3><span class="hint">Narrow down approvals</span></div>
+          <div class="form-grid">
+            <div>
+              <label>Status</label>
+              <select id="statusFilter">
+                <option value="">All</option>
+                <option>Pending</option>
+                <option>Approved</option>
+                <option>Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label>Entity Type</label>
+              <select id="entityFilter">
+                <option value="">All</option>
+                <option>Leave</option>
+                <option>Payroll</option>
+                <option>Access</option>
+              </select>
+            </div>
+            <div>
+              <label>Search</label>
+              <input class="input" id="approvalSearch" placeholder="Employee or request ID" />
+            </div>
+          </div>
         </div>
-        <div>
-          <label>Type</label>
-          <select id="approvalType">
-            <option value="">All Types</option>
-            <option>Leave</option>
-            <option>Attendance</option>
-            <option>Expense</option>
-          </select>
+
+        <div class="card" style="margin-top:24px;">
+          <div class="hd"><h3>Approval List</h3><span class="hint" id="approvalCount">0 items</span></div>
+          <div id="approvalTable"></div>
         </div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="hd"><h3>Approvals</h3><span class="hint" id="approvalCount">0 items</span></div>
-      <div class="bd" id="approvalTable">${Components.loader("Loading approvals...")}</div>
-    </div>
-
-    <div class="card">
-      <div class="hd"><h3>Help Tips</h3><span class="hint">SLA reminders</span></div>
-      <div class="bd">
-        <ul class="help-list">
-          <li>High-priority approvals are highlighted in the queue.</li>
-          <li>Add comments to rejected items to reduce rework.</li>
-          <li>Bulk actions apply to the filtered view.</li>
-        </ul>
+      <div>
+        <div class="card">
+          <div class="hd"><h3>Best Practices</h3><span class="hint">Operations tips</span></div>
+          <ul class="help-list">
+            <li>Review approvals within 24 hours to maintain SLA.</li>
+            <li>Route payroll approvals to Finance and HR jointly.</li>
+            <li>Use notes to document decision rationale.</li>
+          </ul>
+        </div>
       </div>
     </div>
   `;
 
-  const fallbackApprovals = Utils.sampleRange(14, (i) => ({
-    id: i + 1,
-    requester: i % 2 === 0 ? "Avery Patel" : "Jordan Lee",
-    type: i % 3 === 0 ? "Leave" : i % 3 === 1 ? "Attendance" : "Expense",
-    status: i % 4 === 0 ? "pending" : i % 4 === 1 ? "approved" : "rejected",
-    submitted: `2024-03-${String((i % 9) + 1).padStart(2, "0")}`,
-    due: `2024-03-${String((i % 9) + 3).padStart(2, "0")}`
+  const fallbackApprovals = Array.from({ length: 12 }, (_, i) => ({
+    id: `APR-${100 + i}`,
+    employee: i % 2 === 0 ? "Avery Patel" : "Jordan Lee",
+    entity_type: i % 3 === 0 ? "Leave" : i % 3 === 1 ? "Payroll" : "Access",
+    submitted_at: `2023-09-${10 + i}`,
+    status: i % 4 === 0 ? "Rejected" : i % 3 === 0 ? "Approved" : "Pending"
   }));
 
   let approvals = [];
+  const approvalTable = Utils.el("#approvalTable");
 
-  const approvalTable = document.getElementById("approvalTable");
-  const approvalCount = document.getElementById("approvalCount");
-
-  function renderTable(rows) {
+  const renderTable = () => {
     const columns = [
-      { key: "requester", label: "Requester" },
-      { key: "type", label: "Type" },
-      { key: "submitted", label: "Submitted", render: (r) => Utils.fmtDate(r.submitted) },
-      { key: "due", label: "Due", render: (r) => Utils.fmtDate(r.due) },
-      { key: "status", label: "Status", render: (r) => Components.badge(r.status, r.status) }
+      { key: "id", label: "Request ID" },
+      { key: "employee", label: "Employee" },
+      { key: "entity_type", label: "Type" },
+      { key: "submitted_at", label: "Submitted", render: (r) => Utils.formatDate(r.submitted_at) },
+      { key: "status", label: "Status", render: (r) => Badge.render(r.status) }
     ];
 
-    approvalTable.innerHTML = Components.table({ columns, rows, emptyText: "No approvals found." });
-  }
-
-  function applyFilters() {
-    const status = document.getElementById("approvalStatus").value;
-    const type = document.getElementById("approvalType").value;
-    const filtered = approvals.filter((row) => {
-      return (!status || row.status === status) && (!type || row.type === type);
+    Table.render(approvalTable, {
+      columns,
+      rows: approvals,
+      rowActions: (row) => `
+        <div style="display:flex; gap:6px;">
+          <button class="btn small" data-approve="${row.id}">Approve</button>
+          <button class="btn small" data-reject="${row.id}">Reject</button>
+        </div>
+      `,
+      emptyText: "No approvals in queue."
     });
-    approvalCount.textContent = `${filtered.length} items`;
-    renderTable(filtered);
-  }
+    Utils.el("#approvalCount").textContent = `${approvals.length} items`;
+    Utils.el("#pendingCount").textContent = approvals.filter((row) => row.status === "Pending").length;
+  };
 
-  async function init() {
-    try {
-      const data = await API.request("/api/approvals");
-      approvals = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : fallbackApprovals;
-    } catch (err) {
-      approvals = fallbackApprovals;
+  const loadApprovals = async () => {
+    const query = {
+      status: Utils.el("#statusFilter").value,
+      entity_type: Utils.el("#entityFilter").value,
+      search: Utils.el("#approvalSearch").value
+    };
+
+    Loader.show(approvalTable);
+    const response = await api.get("/api/approvals", query);
+    approvals = response.ok ? (response.data?.items || response.data || []) : fallbackApprovals;
+    if (!approvals.length) approvals = fallbackApprovals;
+    renderTable();
+    Loader.hide(approvalTable);
+  };
+
+  approvalTable.addEventListener("click", async (event) => {
+    const approveId = event.target.closest("button[data-approve]")?.dataset.approve;
+    const rejectId = event.target.closest("button[data-reject]")?.dataset.reject;
+    if (approveId) {
+      Toast.show("success", `Approval ${approveId} marked approved.`);
     }
-    applyFilters();
-  }
-
-  document.getElementById("btnBulkApprove").addEventListener("click", () => {
-    Components.toast({ title: "Bulk action", message: "Approvals queued for processing.", type: "success" });
+    if (rejectId) {
+      Toast.show("success", `Approval ${rejectId} marked rejected.`);
+    }
   });
 
-  ["approvalStatus", "approvalType"].forEach((id) => {
-    document.getElementById(id).addEventListener("change", applyFilters);
+  ["statusFilter", "entityFilter", "approvalSearch"].forEach((id) => {
+    Utils.el(`#${id}`)?.addEventListener("input", Utils.debounce(loadApprovals, 400));
+    Utils.el(`#${id}`)?.addEventListener("change", loadApprovals);
   });
 
-  init();
+  loadApprovals();
 })();

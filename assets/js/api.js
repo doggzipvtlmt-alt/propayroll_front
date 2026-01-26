@@ -1,69 +1,67 @@
 (function () {
-  const DEFAULT_TIMEOUT_MS = 12000;
+  const DEFAULT_TIMEOUT = 10000;
 
-  window.APP_STATE = window.APP_STATE || { last_request_id: null };
-
-  async function withTimeout(promiseFactory, ms = DEFAULT_TIMEOUT_MS) {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), ms);
+  const safeJson = (text) => {
     try {
-      return await promiseFactory(controller.signal);
-    } finally {
-      clearTimeout(id);
+      return text ? JSON.parse(text) : {};
+    } catch (err) {
+      return {};
     }
-  }
+  };
 
-  function buildHeaders(extra = {}) {
-    const config = window.APP_CONFIG || {};
-    return {
-      "Content-Type": "application/json",
-      "X-COMPANY-ID": config.COMPANY_ID,
-      "X-USER-ID": config.USER_ID,
-      "X-ROLE": config.ROLE,
-      ...extra
-    };
-  }
-
-  async function request(path, { method = "GET", body = null, query = null, headers = {} } = {}) {
+  const buildUrl = (path, query) => {
     const base = window.APP_CONFIG?.API_BASE_URL || "";
-    const queryString = query ? Utils.buildQuery(query) : "";
-    const url = base.replace(/\/$/, "") + path + queryString;
+    const normalized = base.replace(/\/$/, "");
+    const url = new URL(`${normalized}${path}`);
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value === null || value === undefined || value === "") return;
+        url.searchParams.set(key, value);
+      });
+    }
+    return url.toString();
+  };
+
+  const request = async (path, { method = "GET", body = null, query = null, headers = null, timeoutMs = DEFAULT_TIMEOUT } = {}) => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    const url = buildUrl(path, query);
 
     try {
-      const res = await withTimeout(async (signal) => {
-        return fetch(url, {
-          method,
-          headers: buildHeaders(headers),
-          body: body ? JSON.stringify(body) : null,
-          signal
-        });
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          ...window.getAuthHeaders(),
+          ...(headers || {})
+        },
+        body: body ? JSON.stringify(body) : null,
+        signal: controller.signal
       });
 
       const text = await res.text();
-      const json = text ? JSON.parse(text) : {};
-
-      window.APP_STATE.last_request_id = json.request_id || null;
+      const json = safeJson(text);
+      window.LAST_REQUEST_ID = json.request_id || null;
 
       if (!res.ok || json.ok !== true) {
-        const msg = json?.error || json?.message || res.statusText || "Request failed";
-        const err = new Error(msg);
-        err.status = res.status;
-        err.payload = json;
-        throw err;
+        Toast.show("error", json?.message || json?.error || "Request failed", { title: "API Error" });
+        return { ok: false, data: null };
       }
 
-      return json.data;
+      return { ok: true, data: json.data };
     } catch (err) {
-      if (window.Components?.toast) {
-        Components.toast({
-          title: "API Error",
-          message: err.message || "Unable to load data",
-          type: "error"
-        });
-      }
-      throw err;
+      Toast.show("error", err.message || "Network error", { title: "API Error" });
+      return { ok: false, data: null };
+    } finally {
+      window.clearTimeout(timer);
     }
-  }
+  };
 
-  window.API = { request };
+  window.api = {
+    request,
+    get: (path, query) => request(path, { query }),
+    post: (path, body) => request(path, { method: "POST", body }),
+    put: (path, body) => request(path, { method: "PUT", body }),
+    del: (path) => request(path, { method: "DELETE" })
+  };
 })();

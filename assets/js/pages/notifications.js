@@ -1,122 +1,99 @@
 (function () {
-  Components.mountLayout({ activeNav: "notifications" });
+  Utils.renderLayout();
 
-  const content = document.getElementById("pageContent");
+  const content = Utils.el("#pageContent");
   content.innerHTML = `
     <div class="page-title">
       <div>
-        <div class="breadcrumb">Office OS / Notifications</div>
+        <div class="breadcrumb">Admin / Notifications</div>
         <h1>Notifications Center</h1>
-        <p class="muted">Stay informed with real-time alerts and updates.</p>
+        <p class="muted">Track system alerts, approvals, and policy updates.</p>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn primary" id="btnMarkRead">Mark All Read</button>
-      </div>
+      <button class="btn primary" id="btnReadAll">Mark All Read</button>
     </div>
 
     <div class="grid two">
       <div class="card">
-        <div class="hd"><h3>Notification Feed</h3><span class="hint" id="notiCount">0 alerts</span></div>
-        <div class="bd" id="notiList">${Components.loader("Loading notifications...")}</div>
+        <div class="hd"><h3>Summary</h3><span class="hint">Notification overview</span></div>
+        <div class="grid three">
+          <div><strong id="notiTotal">0</strong><p class="muted">Total</p></div>
+          <div><strong id="notiUnread">0</strong><p class="muted">Unread</p></div>
+          <div><strong>4</strong><p class="muted">Critical</p></div>
+        </div>
       </div>
       <div class="card">
-        <div class="hd"><h3>Filters</h3><span class="hint">Types</span></div>
-        <div class="bd form-grid">
-          <div>
-            <label>Status</label>
-            <select id="notiStatus">
-              <option value="">All</option>
-              <option value="unread">Unread</option>
-              <option value="read">Read</option>
-            </select>
-          </div>
-          <div>
-            <label>Priority</label>
-            <select id="notiPriority">
-              <option value="">Any</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
-        </div>
+        <div class="hd"><h3>Best Practices</h3><span class="hint">Comms tips</span></div>
+        <ul class="help-list">
+          <li>Resolve critical alerts within 2 hours.</li>
+          <li>Archive informational notices monthly.</li>
+          <li>Review approval alerts daily.</li>
+        </ul>
       </div>
     </div>
 
     <div class="card">
-      <div class="hd"><h3>Help Tips</h3><span class="hint">Alert hygiene</span></div>
-      <div class="bd">
-        <ul class="help-list">
-          <li>High priority alerts require immediate action.</li>
-          <li>Mark routine notifications as read to keep the feed clean.</li>
-          <li>Adjust channel preferences in Settings.</li>
-        </ul>
-      </div>
+      <div class="hd"><h3>All Notifications</h3><span class="hint" id="notiCount">0 items</span></div>
+      <div id="notificationsTable"></div>
     </div>
   `;
 
-  const fallbackNotifications = Utils.sampleRange(12, (i) => ({
+  const fallbackNotifications = Array.from({ length: 12 }, (_, i) => ({
     id: i + 1,
-    title: i % 2 === 0 ? "Leave request pending" : "Policy update",
-    message: "Review the latest update in the HR policy hub.",
-    status: i % 3 === 0 ? "read" : "unread",
-    priority: i % 3 === 0 ? "low" : i % 3 === 1 ? "medium" : "high",
-    time: `2024-03-${String((i % 9) + 1).padStart(2, "0")} 09:30`
+    title: i % 2 === 0 ? "Leave request pending" : "New policy update",
+    type: i % 3 === 0 ? "Critical" : "Info",
+    created_at: `2023-09-${10 + i}`,
+    status: i % 4 === 0 ? "Read" : "Unread"
   }));
 
   let notifications = [];
+  const tableEl = Utils.el("#notificationsTable");
 
-  const notiList = document.getElementById("notiList");
-  const notiCount = document.getElementById("notiCount");
+  const renderTable = () => {
+    const columns = [
+      { key: "title", label: "Message" },
+      { key: "type", label: "Type" },
+      { key: "created_at", label: "Date", render: (r) => Utils.formatDate(r.created_at) },
+      { key: "status", label: "Status", render: (r) => Badge.render(r.status === "Unread" ? "Pending" : "Approved") }
+    ];
 
-  function renderList(rows) {
-    if (!rows.length) {
-      notiList.innerHTML = Components.emptyState({ title: "No alerts", description: "You're all caught up." });
-      return;
-    }
-
-    notiList.innerHTML = rows.map((item) => `
-      <div class="mini-card" style="margin-bottom:12px;">
-        <strong>${Utils.escapeHtml(item.title)}</strong>
-        <p class="muted">${Utils.escapeHtml(item.message)}</p>
-        <div style="display:flex; gap:8px; align-items:center;">
-          ${Components.badge(item.priority, item.priority === "high" ? "error" : item.priority === "medium" ? "warn" : "info")}
-          ${Components.badge(item.status, item.status === "read" ? "approved" : "pending")}
-          <span class="hint">${Utils.escapeHtml(item.time)}</span>
+    Table.render(tableEl, {
+      columns,
+      rows: notifications,
+      rowActions: (row) => `
+        <div style="display:flex; gap:6px;">
+          <button class="btn small" data-read="${row.id}">Mark Read</button>
         </div>
-      </div>
-    `).join("");
-  }
-
-  function applyFilters() {
-    const status = document.getElementById("notiStatus").value;
-    const priority = document.getElementById("notiPriority").value;
-    const filtered = notifications.filter((item) => {
-      return (!status || item.status === status) && (!priority || item.priority === priority);
+      `,
+      emptyText: "No notifications available."
     });
-    notiCount.textContent = `${filtered.length} alerts`;
-    renderList(filtered);
-  }
+    Utils.el("#notiCount").textContent = `${notifications.length} items`;
+    Utils.el("#notiTotal").textContent = notifications.length;
+    Utils.el("#notiUnread").textContent = notifications.filter((row) => row.status === "Unread").length;
+  };
 
-  async function init() {
-    try {
-      const data = await API.request("/api/notifications");
-      notifications = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : fallbackNotifications;
-    } catch (err) {
-      notifications = fallbackNotifications;
-    }
-    applyFilters();
-  }
+  const loadNotifications = async () => {
+    Loader.show(tableEl);
+    const response = await api.get("/api/notifications");
+    notifications = response.ok ? (response.data?.items || response.data || []) : fallbackNotifications;
+    if (!notifications.length) notifications = fallbackNotifications;
+    renderTable();
+    Loader.hide(tableEl);
+  };
 
-  document.getElementById("btnMarkRead").addEventListener("click", () => {
-    notifications = notifications.map((item) => ({ ...item, status: "read" }));
-    applyFilters();
-    Components.toast({ title: "Updated", message: "All notifications marked as read.", type: "success" });
+  Utils.el("#btnReadAll")?.addEventListener("click", async () => {
+    const response = await api.put("/api/notifications/read-all", {});
+    if (response.ok) Toast.show("success", "All notifications marked read.");
+    notifications = notifications.map((n) => ({ ...n, status: "Read" }));
+    renderTable();
   });
 
-  ["notiStatus", "notiPriority"].forEach((id) => {
-    document.getElementById(id).addEventListener("change", applyFilters);
+  tableEl.addEventListener("click", async (event) => {
+    const readId = event.target.closest("button[data-read]")?.dataset.read;
+    if (!readId) return;
+    await api.put(`/api/notifications/${readId}/read`, {});
+    notifications = notifications.map((n) => n.id == readId ? { ...n, status: "Read" } : n);
+    renderTable();
   });
 
-  init();
+  loadNotifications();
 })();

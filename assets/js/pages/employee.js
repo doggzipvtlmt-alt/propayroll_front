@@ -1,255 +1,173 @@
 (function () {
-  Components.mountLayout({ activeNav: "employees" });
+  Utils.renderLayout();
 
-  const content = document.getElementById("pageContent");
+  const content = Utils.el("#pageContent");
   content.innerHTML = `
     <div class="page-title">
       <div>
         <div class="breadcrumb">People / Employees / Profile</div>
         <h1>Employee Profile</h1>
-        <p class="muted">Full view of employee details, documents, and history.</p>
+        <p class="muted">Full employee record including personal, work, and history data.</p>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <a class="btn" href="employees.html">← Back to Directory</a>
-        <button class="btn primary" id="btnEditProfile">Edit Profile</button>
-      </div>
+      <a class="btn" href="employees.html">Back to Directory</a>
     </div>
 
     <div class="card" id="profileHeader"></div>
 
     <div class="card">
-      <div class="hd">
-        <h3>Profile Tabs</h3>
-        <span class="hint">Navigate details</span>
+      <div class="tabs" id="profileTabs">
+        <button data-tab="overview">Overview</button>
+        <button data-tab="personal">Personal</button>
+        <button data-tab="work">Work</button>
+        <button data-tab="documents">Documents</button>
+        <button data-tab="history">History</button>
       </div>
-      <div class="bd">
-        <div id="profileTabs"></div>
-        <div id="tabContent" style="margin-top:16px;"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="hd">
-        <h3>Help Tips</h3>
-        <span class="hint">Profile checklist</span>
-      </div>
-      <div class="bd">
-        <ul class="help-list">
-          <li>Verify emergency contact and ID documents for compliance.</li>
-          <li>Review leave balances during every performance cycle.</li>
-          <li>Keep manager assignments updated for workflows.</li>
-        </ul>
-      </div>
+      <div class="tab-panel" data-tab-content="overview" id="tabOverview"></div>
+      <div class="tab-panel" data-tab-content="personal" id="tabPersonal"></div>
+      <div class="tab-panel" data-tab-content="work" id="tabWork"></div>
+      <div class="tab-panel" data-tab-content="documents" id="tabDocuments"></div>
+      <div class="tab-panel" data-tab-content="history" id="tabHistory"></div>
     </div>
   `;
 
-  const id = Utils.getParam("id") || "1";
   const fallbackEmployee = {
-    id,
-    emp_code: "EMP-1092",
+    id: 1,
+    emp_code: "EMP-1001",
     name: "Avery Patel",
-    department: "Engineering",
-    designation: "Lead",
+    status: "Active",
+    department: "People Ops",
+    designation: "HR Lead",
     manager: "Maria Thomas",
-    join_date: "2021-04-12",
-    status: "active",
+    join_date: "2021-05-12",
     email: "avery.patel@officeos.com",
-    phone: "+1-202-555-0192",
+    phone: "+1-202-555-0123",
     location: "New York",
-    address: "245 Hudson Street, NY",
-    dob: "1991-11-08",
-    blood_group: "O+",
-    emergency_contact: "Sam Patel • +1-202-555-0171"
+    work_mode: "Hybrid",
+    leave_balance: { annual: 12, sick: 6, casual: 5 }
   };
 
-  let employee = fallbackEmployee;
-
-  const profileHeader = document.getElementById("profileHeader");
-  const profileTabs = document.getElementById("profileTabs");
-  const tabContent = document.getElementById("tabContent");
-
-  function renderHeader() {
-    profileHeader.innerHTML = `
-      <div class="grid two">
+  const renderHeader = (emp) => {
+    Utils.el("#profileHeader").innerHTML = `
+      <div style="display:flex; gap:16px; align-items:center;">
+        <div class="avatar" style="width:64px; height:64px;">${Utils.escapeHtml(emp.name?.slice(0, 1) || "E")}</div>
         <div>
-          <h2 style="margin-top:0;">${Utils.escapeHtml(employee.name)}</h2>
-          <p class="muted">${Utils.escapeHtml(employee.designation)} • ${Utils.escapeHtml(employee.department)}</p>
-          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-            ${Components.badge(employee.status, employee.status)}
-            <span class="badge info">${Utils.escapeHtml(employee.emp_code)}</span>
-          </div>
-        </div>
-        <div>
-          <div class="mini-card">
-            <p><strong>Email:</strong> ${Utils.escapeHtml(employee.email)}</p>
-            <p><strong>Phone:</strong> ${Utils.escapeHtml(employee.phone)}</p>
-            <p><strong>Manager:</strong> ${Utils.escapeHtml(employee.manager)}</p>
-            <p><strong>Join Date:</strong> ${Utils.fmtDate(employee.join_date)}</p>
-          </div>
-        </div>
-      </div>
-      <div class="grid three" style="margin-top:20px;">
-        <div class="card">
-          <div class="hd"><h4>Leave Balance</h4><span class="hint">2024</span></div>
-          <div class="bd">
-            <p><strong>Annual:</strong> 14 days</p>
-            <p><strong>Sick:</strong> 8 days</p>
-            <p><strong>WFH:</strong> 6 days</p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="hd"><h4>Performance</h4><span class="hint">Quarterly</span></div>
-          <div class="bd">
-            <p><strong>Score:</strong> 4.3/5</p>
-            <p><strong>Last Review:</strong> 2024-01-15</p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="hd"><h4>Engagement</h4><span class="hint">Pulse</span></div>
-          <div class="bd">
-            <p><strong>eNPS:</strong> +38</p>
-            <p><strong>Manager Check-in:</strong> Weekly</p>
-          </div>
+          <h2 style="margin:0;">${Utils.escapeHtml(emp.name || "Employee")}</h2>
+          <p class="muted">${Utils.escapeHtml(emp.emp_code || "")}</p>
+          ${Badge.render(emp.status || "Active")}
         </div>
       </div>
     `;
-  }
+  };
 
-  function renderTabContent(key) {
-    const sections = {
-      overview: `
-        <div class="grid two">
-          <div class="card">
-            <div class="hd"><h4>Role Summary</h4></div>
-            <div class="bd">
-              <p>${Utils.escapeHtml(employee.name)} drives roadmap delivery for the ${Utils.escapeHtml(employee.department)} team.</p>
-              <p><strong>Location:</strong> ${Utils.escapeHtml(employee.location)}</p>
-              <p><strong>Office:</strong> HQ - 4th Floor</p>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><h4>Manager Insights</h4></div>
-            <div class="bd">
-              <p><strong>Manager:</strong> ${Utils.escapeHtml(employee.manager)}</p>
-              <p>Weekly 1:1 scheduled every Monday at 10:00 AM.</p>
-              <p>Next goal review: 2024-05-01.</p>
-            </div>
-          </div>
-        </div>
-      `,
-      personal: `
+  const renderOverview = (emp) => {
+    Utils.el("#tabOverview").innerHTML = `
+      <div class="grid three" style="margin-top:16px;">
         <div class="card">
-          <div class="hd"><h4>Personal Details</h4></div>
-          <div class="bd">
-            <p><strong>Date of Birth:</strong> ${Utils.escapeHtml(employee.dob)}</p>
-            <p><strong>Blood Group:</strong> ${Utils.escapeHtml(employee.blood_group)}</p>
-            <p><strong>Address:</strong> ${Utils.escapeHtml(employee.address)}</p>
-            <p><strong>Emergency Contact:</strong> ${Utils.escapeHtml(employee.emergency_contact)}</p>
-          </div>
+          <h4>Manager</h4>
+          <p>${Utils.escapeHtml(emp.manager || "—")}</p>
+          <span class="hint">Primary approver</span>
         </div>
-      `,
-      work: `
-        <div class="grid two">
-          <div class="card">
-            <div class="hd"><h4>Work Details</h4></div>
-            <div class="bd">
-              <p><strong>Employee Code:</strong> ${Utils.escapeHtml(employee.emp_code)}</p>
-              <p><strong>Designation:</strong> ${Utils.escapeHtml(employee.designation)}</p>
-              <p><strong>Department:</strong> ${Utils.escapeHtml(employee.department)}</p>
-              <p><strong>Join Date:</strong> ${Utils.fmtDate(employee.join_date)}</p>
-            </div>
-          </div>
-          <div class="card">
-            <div class="hd"><h4>Reporting Line</h4></div>
-            <div class="bd">
-              <p><strong>Manager:</strong> ${Utils.escapeHtml(employee.manager)}</p>
-              <p><strong>Direct Reports:</strong> 4 employees</p>
-              <p><strong>Work Mode:</strong> Hybrid</p>
-            </div>
-          </div>
-        </div>
-      `,
-      documents: `
         <div class="card">
-          <div class="hd"><h4>Documents</h4><span class="hint">Uploads pending</span></div>
-          <div class="bd">
-            <p>Upload offer letters, IDs, and compliance documents here.</p>
-            <button class="btn">Upload Document</button>
-          </div>
+          <h4>Department</h4>
+          <p>${Utils.escapeHtml(emp.department || "—")}</p>
+          <span class="hint">${Utils.escapeHtml(emp.designation || "—")}</span>
         </div>
-      `,
-      history: `
         <div class="card">
-          <div class="hd"><h4>History Timeline</h4></div>
-          <div class="bd timeline">
-            <div class="timeline-item">
-              <div class="timeline-dot"></div>
-              <div>
-                <strong>2024-02-12</strong>
-                <p class="muted">Completed leadership training.</p>
-              </div>
-            </div>
-            <div class="timeline-item">
-              <div class="timeline-dot"></div>
-              <div>
-                <strong>2023-10-01</strong>
-                <p class="muted">Promoted to Lead Engineer.</p>
-              </div>
-            </div>
-            <div class="timeline-item">
-              <div class="timeline-dot"></div>
-              <div>
-                <strong>2022-05-05</strong>
-                <p class="muted">Transferred to Platform team.</p>
-              </div>
+          <h4>Work Mode</h4>
+          <p>${Utils.escapeHtml(emp.work_mode || "Hybrid")}</p>
+          <span class="hint">Location: ${Utils.escapeHtml(emp.location || "—")}</span>
+        </div>
+      </div>
+      <div class="grid three" style="margin-top:24px;">
+        <div class="card">
+          <h4>Annual Leave</h4>
+          <p>${emp.leave_balance?.annual ?? 12} days</p>
+        </div>
+        <div class="card">
+          <h4>Sick Leave</h4>
+          <p>${emp.leave_balance?.sick ?? 6} days</p>
+        </div>
+        <div class="card">
+          <h4>Casual Leave</h4>
+          <p>${emp.leave_balance?.casual ?? 5} days</p>
+        </div>
+      </div>
+    `;
+  };
+
+  const renderPersonal = (emp) => {
+    Utils.el("#tabPersonal").innerHTML = `
+      <div class="form-grid" style="margin-top:16px;">
+        <div><label>Email</label><p>${Utils.escapeHtml(emp.email || "—")}</p></div>
+        <div><label>Phone</label><p>${Utils.escapeHtml(emp.phone || "—")}</p></div>
+        <div><label>Location</label><p>${Utils.escapeHtml(emp.location || "—")}</p></div>
+        <div><label>Emergency Contact</label><p>+1-202-555-0178</p></div>
+      </div>
+    `;
+  };
+
+  const renderWork = (emp) => {
+    Utils.el("#tabWork").innerHTML = `
+      <div class="form-grid" style="margin-top:16px;">
+        <div><label>Department</label><p>${Utils.escapeHtml(emp.department || "—")}</p></div>
+        <div><label>Designation</label><p>${Utils.escapeHtml(emp.designation || "—")}</p></div>
+        <div><label>Join Date</label><p>${Utils.formatDate(emp.join_date)}</p></div>
+        <div><label>Manager</label><p>${Utils.escapeHtml(emp.manager || "—")}</p></div>
+      </div>
+      <div class="notice" style="margin-top:16px;">
+        <strong>Attendance Snapshot</strong>
+        <p class="muted">98% on-time arrival in the last 30 days.</p>
+      </div>
+    `;
+  };
+
+  const renderDocuments = () => {
+    Utils.el("#tabDocuments").innerHTML = `
+      <div class="notice" style="margin-top:16px;">
+        <strong>Upload Documents</strong>
+        <p class="muted">Drop files here or click to upload. Supported: PDF, JPG, PNG.</p>
+        <button class="btn" style="margin-top:12px;">Upload File</button>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="hd"><h4>Stored Documents</h4><span class="hint">3 files</span></div>
+        <ul class="help-list">
+          <li>Offer Letter.pdf</li>
+          <li>Government ID.png</li>
+          <li>Signed NDA.pdf</li>
+        </ul>
+      </div>
+    `;
+  };
+
+  const renderHistory = () => {
+    Utils.el("#tabHistory").innerHTML = `
+      <div class="timeline" style="margin-top:16px;">
+        ${["Promoted to HR Lead", "Approved leave request", "Updated bank details", "Completed compliance training"].map((item) => `
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div>
+              <strong>${Utils.escapeHtml(item)}</strong>
+              <p class="muted">${Utils.escapeHtml("Recorded by Office OS")}</p>
+              <span class="hint">${new Date().toLocaleDateString()}</span>
             </div>
           </div>
-        </div>
-      `
-    };
-    tabContent.innerHTML = sections[key] || sections.overview;
-  }
+        `).join("")}
+      </div>
+    `;
+  };
 
-  function renderTabs(active = "overview") {
-    profileTabs.innerHTML = Components.tabs({
-      tabs: [
-        { key: "overview", label: "Overview" },
-        { key: "personal", label: "Personal" },
-        { key: "work", label: "Work" },
-        { key: "documents", label: "Documents" },
-        { key: "history", label: "History" }
-      ],
-      active
-    });
+  const loadEmployee = async () => {
+    const id = Utils.qs("id") || "1";
+    const response = await api.get(`/api/employees/${id}`);
+    const emp = response.ok ? response.data : fallbackEmployee;
+    renderHeader(emp || fallbackEmployee);
+    renderOverview(emp || fallbackEmployee);
+    renderPersonal(emp || fallbackEmployee);
+    renderWork(emp || fallbackEmployee);
+    renderDocuments();
+    renderHistory();
+    Tabs.init(Utils.el("#profileTabs"));
+  };
 
-    profileTabs.addEventListener("click", (e) => {
-      const key = e.target.getAttribute("data-tab");
-      if (!key) return;
-      Utils.qsa(".tab", profileTabs).forEach((tab) => tab.classList.remove("active"));
-      e.target.classList.add("active");
-      renderTabContent(key);
-    });
-
-    renderTabContent(active);
-  }
-
-  async function init() {
-    try {
-      employee = await API.request(`/api/employees/${id}`);
-    } catch (err) {
-      employee = fallbackEmployee;
-    }
-    renderHeader();
-    renderTabs();
-  }
-
-  document.getElementById("btnEditProfile").addEventListener("click", () => {
-    Components.toast({
-      title: "Edit Mode",
-      message: "Profile editing is coming soon.",
-      type: "info"
-    });
-  });
-
-  init();
+  loadEmployee();
 })();

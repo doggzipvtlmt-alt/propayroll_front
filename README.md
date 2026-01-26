@@ -3,44 +3,40 @@
 A static, HTML/CSS/Vanilla JS frontend for the Office OS platform. It consumes a FastAPI backend via REST APIs and renders a full HR operations UI with fallback data so pages always load offline.
 
 ## Configuration
-Update `assets/js/config.js` with your API base URL and identity headers:
+The API base URL and identity defaults live in `assets/js/config.js`:
 
 ```js
 window.APP_CONFIG = {
-  API_BASE_URL: "http://127.0.0.1:8000",
-  COMPANY_ID: "CHANGE_ME",
-  USER_ID: "CHANGE_ME",
+  API_BASE_URL: "https://propayroll.onrender.com",
+  COMPANY_ID: "SEED_COMPANY_ID_OR_PLACEHOLDER",
+  USER_ID: "SEED_USER_ID_OR_PLACEHOLDER",
   ROLE: "MD"
-}
+};
 ```
 
-### Runtime overrides
-You can override the API base URL and role at runtime using query parameters:
+## Required headers
+Every request automatically includes:
 
-- `?api=https://your-api.example.com`
-- `?role=HR`
+- `X-COMPANY-ID`
+- `X-USER-ID`
+- `X-ROLE`
 
-Example:
+## Update identity from the UI
+Use the **Identity** button in the top bar to update `COMPANY_ID`, `USER_ID`, and `ROLE`. Values are stored in `localStorage`, so you don’t need to edit files once set.
 
-```
-/index.html?api=https://api.example.com&role=ADMIN
-```
-
-## Running locally
-Use VS Code Live Server or any static server:
-
-1. Open the folder in VS Code.
+## Running locally (VS Code Live Server)
+1. Open the repository in VS Code.
 2. Right click `index.html` → **Open with Live Server**.
-3. Navigate to the page you want (e.g. `employees.html`).
+3. Navigate to other pages (e.g. `employees.html`).
 
-## Render deployment (static site)
+## Deploy on Render (Static Site)
 1. Create a new **Static Site** service on Render.
 2. Connect the repository.
-3. Set the **Build Command** to empty and **Publish Directory** to the repo root (`.`).
-4. Deploy.
-5. Update `assets/js/config.js` or use `?api=` runtime overrides to point to the backend.
+3. **Root Directory**: leave blank (or set if deploying from a subfolder).
+4. **Build Command**: leave blank.
+5. **Publish Directory**: `.`
+6. SPA redirect is **not** required because this is a multi-page site.
 
 ## Notes
-- All API calls include `X-COMPANY-ID`, `X-USER-ID`, and `X-ROLE` headers.
 - Backend responses are expected in the `{ ok, data, request_id }` envelope.
 - UI renders fallback sample data when the API is unavailable.

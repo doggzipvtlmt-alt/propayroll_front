@@ -1,214 +1,151 @@
 (function () {
-  Components.mountLayout({ activeNav: "attendance" });
+  Utils.renderLayout();
 
-  const content = document.getElementById("pageContent");
+  const content = Utils.el("#pageContent");
   content.innerHTML = `
     <div class="page-title">
       <div>
         <div class="breadcrumb">People / Attendance</div>
         <h1>Attendance Tracker</h1>
-        <p class="muted">Monitor daily attendance and mark bulk entries.</p>
+        <p class="muted">Monitor daily attendance, late arrivals, and remote coverage.</p>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn primary" id="btnMarkAttendance">✅ Mark Attendance</button>
-      </div>
+      <button class="btn primary" id="btnMark">Mark Attendance</button>
     </div>
 
     <div class="grid two">
       <div class="card">
-        <div class="hd">
-          <h3>Monthly Overview</h3>
-          <span class="hint">Status badges</span>
-        </div>
-        <div class="bd">
-          <div class="calendar-grid" id="calendarGrid"></div>
-        </div>
+        <div class="hd"><h3>Monthly View</h3><span class="hint">Current month</span></div>
+        <div class="calendar-grid" id="attendanceCalendar"></div>
       </div>
       <div class="card">
-        <div class="hd">
-          <h3>Attendance Filters</h3>
-          <span class="hint">Filter by date/department</span>
-        </div>
-        <div class="bd form-grid">
+        <div class="hd"><h3>Daily Attendance</h3><span class="hint">Filtered by department</span></div>
+        <div class="form-grid">
           <div>
             <label>Date</label>
-            <input class="input" type="date" id="attendanceDate" />
+            <input class="input" id="attendanceDate" type="date" />
           </div>
           <div>
             <label>Department</label>
-            <select id="attendanceDepartment">
-              <option value="">All Departments</option>
-            </select>
-          </div>
-          <div>
-            <label>Status</label>
-            <select id="attendanceStatus">
-              <option value="">Any Status</option>
-              <option value="present">Present</option>
-              <option value="remote">Remote</option>
-              <option value="leave">Leave</option>
-              <option value="absent">Absent</option>
-            </select>
+            <select id="departmentFilter"></select>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="hd">
-        <h3>Daily Attendance</h3>
-        <span class="hint" id="attendanceCount">0 entries</span>
-      </div>
-      <div class="bd" id="attendanceTable">${Components.loader("Loading attendance...")}</div>
-    </div>
-
-    <div class="card">
-      <div class="hd">
-        <h3>Help Tips</h3>
-        <span class="hint">Operational guidance</span>
-      </div>
-      <div class="bd">
-        <ul class="help-list">
-          <li>Mark attendance in bulk before 11 AM each day.</li>
-          <li>Use remote status for approved work-from-home employees.</li>
-          <li>Attendance anomalies are flagged automatically.</li>
-        </ul>
+        <div id="attendanceTable"></div>
       </div>
     </div>
   `;
 
-  const fallbackAttendance = Utils.sampleRange(15, (i) => ({
+  const calendar = Utils.el("#attendanceCalendar");
+  const attendanceTable = Utils.el("#attendanceTable");
+
+  const fallbackDepartments = ["All Departments", "Engineering", "People Ops", "Finance", "Sales"];
+
+  const fallbackRows = Array.from({ length: 12 }, (_, i) => ({
     id: i + 1,
     employee: i % 2 === 0 ? "Avery Patel" : "Jordan Lee",
     department: i % 3 === 0 ? "Engineering" : i % 3 === 1 ? "Finance" : "People Ops",
-    date: `2024-03-${String((i % 9) + 1).padStart(2, "0")}`,
-    status: i % 4 === 0 ? "remote" : i % 4 === 1 ? "leave" : "present",
-    check_in: "09:30",
-    check_out: "18:10"
+    status: i % 4 === 0 ? "Absent" : i % 3 === 0 ? "Remote" : "Present",
+    check_in: "09:15 AM",
+    check_out: "06:10 PM"
   }));
 
-  let attendance = [];
-  let departments = ["Engineering", "Finance", "People Ops", "Sales"];
+  const statusDots = {
+    Present: "present",
+    Absent: "absent",
+    Leave: "leave",
+    Remote: "remote"
+  };
 
-  const calendarGrid = document.getElementById("calendarGrid");
-  const attendanceTable = document.getElementById("attendanceTable");
-  const attendanceCount = document.getElementById("attendanceCount");
-  const attendanceDepartment = document.getElementById("attendanceDepartment");
+  const renderCalendar = () => {
+    const now = new Date();
+    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    calendar.innerHTML = Array.from({ length: days }, (_, i) => {
+      const status = ["Present", "Present", "Remote", "Leave", "Absent"][i % 5];
+      return `
+        <div class="calendar-cell">
+          <strong>${i + 1}</strong>
+          <span class="status-dot ${statusDots[status]}"></span>
+          <span class="hint">${status}</span>
+        </div>
+      `;
+    }).join("");
+  };
 
-  function renderCalendar() {
-    const days = Utils.sampleRange(28, (i) => ({
-      day: i + 1,
-      status: i % 5 === 0 ? "leave" : i % 4 === 0 ? "remote" : "present"
-    }));
-
-    calendarGrid.innerHTML = days.map((d) => `
-      <div class="calendar-cell">
-        <strong>${d.day}</strong>
-        ${Components.badge(d.status, d.status === "present" ? "approved" : d.status === "remote" ? "info" : "pending")}
-      </div>
-    `).join("");
-  }
-
-  function renderTable(rows) {
+  const renderTable = (rows) => {
     const columns = [
       { key: "employee", label: "Employee" },
       { key: "department", label: "Department" },
-      { key: "date", label: "Date", render: (r) => Utils.fmtDate(r.date) },
-      { key: "status", label: "Status", render: (r) => Components.badge(r.status, r.status === "present" ? "approved" : r.status === "remote" ? "info" : "pending") },
-      { key: "check_in", label: "Check-In" },
-      { key: "check_out", label: "Check-Out" }
+      { key: "status", label: "Status", render: (r) => Badge.render(r.status) },
+      { key: "check_in", label: "Check In" },
+      { key: "check_out", label: "Check Out" }
     ];
+    Table.render(attendanceTable, { columns, rows, emptyText: "No attendance records." });
+  };
 
-    attendanceTable.innerHTML = Components.table({ columns, rows, emptyText: "No attendance data." });
-  }
+  const loadDepartments = async () => {
+    const response = await api.get("/api/meta/departments");
+    const departments = response.ok ? response.data : fallbackDepartments;
+    Utils.el("#departmentFilter").innerHTML = ["All Departments", ...departments].map((dept) => `
+      <option value="${dept === "All Departments" ? "" : dept}">${dept}</option>
+    `).join("");
+  };
 
-  function openAttendanceModal() {
-    const modal = Components.openModal({
-      title: "Mark Attendance",
-      bodyHtml: `
-        <form id="attendanceForm" class="form-grid">
-          <div>
-            <label>Date</label>
-            <input class="input" type="date" name="date" required />
-          </div>
-          <div>
-            <label>Department</label>
-            <select name="department">
-              ${departments.map((dep) => `<option>${Utils.escapeHtml(dep)}</option>`).join("")}
-            </select>
-          </div>
-          <div>
-            <label>Status</label>
-            <select name="status">
-              <option value="present">Present</option>
-              <option value="remote">Remote</option>
-              <option value="leave">Leave</option>
-              <option value="absent">Absent</option>
-            </select>
-          </div>
-          <div>
-            <label>Notes</label>
-            <textarea rows="3" name="notes"></textarea>
-          </div>
-        </form>
-      `,
-      footerHtml: `
-        <button class="btn" id="cancelAttendance">Cancel</button>
-        <button class="btn primary" id="saveAttendance">Submit</button>
+  const loadAttendance = async () => {
+    const query = {
+      date: Utils.el("#attendanceDate").value,
+      department: Utils.el("#departmentFilter").value
+    };
+    Loader.show(attendanceTable);
+    const response = await api.get("/api/attendance", query);
+    const rows = response.ok ? (response.data?.items || response.data || []) : fallbackRows;
+    renderTable(rows.length ? rows : fallbackRows);
+    Loader.hide(attendanceTable);
+  };
+
+  const openMarkModal = () => {
+    Modal.open("attendance", `
+      <form id="attendanceForm" class="form-grid">
+        <div>
+          <label>Date</label>
+          <input class="input" type="date" name="date" required />
+        </div>
+        <div>
+          <label>Department</label>
+          <input class="input" name="department" placeholder="Engineering" />
+        </div>
+        <div>
+          <label>Status</label>
+          <select name="status">
+            <option>Present</option>
+            <option>Remote</option>
+            <option>Leave</option>
+            <option>Absent</option>
+          </select>
+        </div>
+        <div>
+          <label>Notes</label>
+          <textarea class="input" name="notes" rows="3" placeholder="Optional"></textarea>
+        </div>
+      </form>
+    `, {
+      title: "Bulk Mark Attendance",
+      footer: `
+        <button class="btn" data-close>Cancel</button>
+        <button class="btn primary" id="saveAttendance">Save</button>
       `
     });
 
-    document.getElementById("cancelAttendance").addEventListener("click", modal.close);
-    document.getElementById("saveAttendance").addEventListener("click", async () => {
-      const form = document.getElementById("attendanceForm");
-      const payload = Object.fromEntries(new FormData(form).entries());
-      try {
-        const created = await API.request("/api/attendance", { method: "POST", body: payload });
-        attendance = [created, ...attendance];
-        Components.toast({ title: "Saved", message: "Attendance recorded.", type: "success" });
-      } catch (err) {
-        attendance = [{ id: Date.now(), employee: "Bulk Entry", check_in: "09:00", check_out: "18:00", ...payload }, ...attendance];
-      }
-      modal.close();
-      renderTable(attendance);
+    Utils.el("#saveAttendance")?.addEventListener("click", async () => {
+      const payload = Object.fromEntries(new FormData(Utils.el("#attendanceForm")).entries());
+      const response = await api.post("/api/attendance", payload);
+      if (response.ok) Toast.show("success", "Attendance saved.");
+      Modal.close("attendance");
+      loadAttendance();
     });
-  }
+  };
 
-  async function loadDepartments() {
-    try {
-      const data = await API.request("/api/meta/departments");
-      departments = Array.isArray(data) ? data : departments;
-    } catch (err) {
-      departments = departments;
-    }
-    attendanceDepartment.innerHTML = `<option value="">All Departments</option>` + departments.map((dep) => `<option>${Utils.escapeHtml(dep)}</option>`).join("");
-  }
-
-  async function loadAttendance() {
-    try {
-      const data = await API.request("/api/attendance");
-      attendance = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : fallbackAttendance;
-    } catch (err) {
-      attendance = fallbackAttendance;
-    }
-    attendanceCount.textContent = `${attendance.length} entries`;
-    renderTable(attendance);
-  }
-
-  document.getElementById("btnMarkAttendance").addEventListener("click", openAttendanceModal);
-
-  ["attendanceDate", "attendanceDepartment", "attendanceStatus"].forEach((id) => {
-    document.getElementById(id).addEventListener("change", () => {
-      const date = document.getElementById("attendanceDate").value;
-      const dept = attendanceDepartment.value;
-      const status = document.getElementById("attendanceStatus").value;
-      const filtered = attendance.filter((row) => {
-        return (!date || row.date === date) && (!dept || row.department === dept) && (!status || row.status === status);
-      });
-      attendanceCount.textContent = `${filtered.length} entries`;
-      renderTable(filtered);
-    });
-  });
+  Utils.el("#btnMark")?.addEventListener("click", openMarkModal);
+  Utils.el("#attendanceDate")?.addEventListener("change", loadAttendance);
+  Utils.el("#departmentFilter")?.addEventListener("change", loadAttendance);
 
   renderCalendar();
   loadDepartments();
