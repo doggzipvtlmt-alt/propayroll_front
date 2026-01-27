@@ -10,28 +10,39 @@
   <div class="auth-container">
     <div class="auth-card">
       <h1>Access Request</h1>
-      <p class="subtext">Submit an approval request to the Maker role.</p>
+      <p class="subtext">Submit a registration request for review and approval.</p>
       <form id="requestForm">
         <label>
           Full Name
-          <input type="text" name="full_name" required />
+          <input type="text" name="fullName" required />
         </label>
         <label>
           Official Email (@doggzi.com)
-          <input type="email" name="email" required placeholder="name@doggzi.com" />
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="name@doggzi.com"
+            pattern="^[a-zA-Z0-9._%+-]+@doggzi\\.com$"
+          />
         </label>
         <label>
           Phone Number
-          <input type="tel" name="phone_number" required placeholder="+91" />
+          <input type="tel" name="phone" required placeholder="9876543210" pattern="^[6-9]\\d{9}$" />
         </label>
         <label>
           Role Requested
-          <select name="role_requested" required>
+          <select name="requestedRole" required>
+            <option value="" disabled selected>Select a role</option>
             <option value="HR">HR</option>
             <option value="MD">MD</option>
             <option value="EMPLOYEE">EMPLOYEE</option>
             <option value="FINANCE">FINANCE</option>
           </select>
+        </label>
+        <label>
+          Department (optional)
+          <input type="text" name="department" placeholder="e.g., Finance, Operations" />
         </label>
         <div class="actions">
           <a href="login.html">Back to Login</a>
@@ -39,6 +50,9 @@
         </div>
       </form>
       <p class="small" id="requestStatus"></p>
+      <p class="small">
+        Requests are verified against company policy and require approval before account activation.
+      </p>
     </div>
   </div>
   <script src="assets/js/config.js"></script>

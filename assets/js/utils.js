@@ -22,7 +22,11 @@ function setActiveLink(path) {
 }
 
 function enforceDoggziEmail(value) {
-  return /@doggzi\.com$/i.test(value);
+  return /^[a-zA-Z0-9._%+-]+@doggzi\.com$/i.test(value);
+}
+
+function enforceIndianPhone(value) {
+  return /^[6-9]\d{9}$/.test(value);
 }
 
 const SAMPLE_DATA = {
