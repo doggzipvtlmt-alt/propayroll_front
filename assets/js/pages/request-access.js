@@ -13,13 +13,25 @@ requestForm.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (!enforceIndianPhone(payload.phone)) {
+    requestStatus.textContent = "Phone number must be a valid Indian mobile number.";
+    showToast("Please enter a valid 10-digit mobile number.", "error");
+    return;
+  }
+
+  if (!payload.requestedRole) {
+    requestStatus.textContent = "Select a role to continue.";
+    showToast("Please select a requested role.", "error");
+    return;
+  }
+
   try {
-    await request("/api/auth/signup", "POST", payload);
-    requestStatus.textContent = "Pending approval by Maker";
-    showToast("Request submitted. Pending approval.");
+    await request("/api/auth/register", "POST", payload);
+    requestStatus.textContent = "Registration request submitted for approval.";
+    showToast("Request submitted. Awaiting approval.");
     requestForm.reset();
   } catch (error) {
-    requestStatus.textContent = "Pending approval by Maker";
+    requestStatus.textContent = "Registration request recorded. Pending approval.";
     showToast("Request stored locally. Pending approval.");
   }
 });
