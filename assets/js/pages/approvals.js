@@ -2,12 +2,12 @@
   const ready = await Utils.ensureAuthenticated();
   if (!ready) return;
 
-  const canAccess = Utils.hasRole(["HR", "MD", "ADMIN"]);
+  const canAccess = Utils.hasRole(["HR", "MD", "FINANCE", "SUPERUSER"]);
 
   const content = Layout.render({
     title: "Approvals Desk",
-    subtitle: "Centralized approvals for payroll and HR operations.",
-    breadcrumb: ["HR", "Approvals"]
+    subtitle: "Centralized approvals for HR, finance, and governance workflows.",
+    breadcrumb: ["Workflow", "Approvals"]
   });
 
   if (!content) return;
@@ -16,7 +16,7 @@
     content.innerHTML += `
       <div class="card">
         <h3>Access Restricted</h3>
-        <p class="muted">Approval workflows are restricted to HR, MD, and ADMIN roles.</p>
+        <p class="muted">Approval workflows are restricted to HR, Finance, MD, and Superuser roles.</p>
       </div>
     `;
     return;
@@ -66,7 +66,7 @@
         <div class="card">
           <div class="hd"><h3>Service Notes</h3><span class="hint">Guidance</span></div>
           <ul class="help-list">
-            <li>Payroll approvals must be locked 2 days before payday.</li>
+            <li>Designation or salary changes require Finance → MD → Superuser approvals.</li>
             <li>High priority items auto-escalate to MD after 24 hours.</li>
             <li>Rejected items require a reason in audit logs.</li>
           </ul>

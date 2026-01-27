@@ -271,28 +271,36 @@
       const companyId = session?.company_id || session?.user?.company_id || "—";
 
       const navItems = [
-        { label: "Dashboard", href: "index.html", icon: "🏠", roles: ["MD", "HR", "ADMIN", "EMPLOYEE"] },
-        { label: "Employees", href: "employees.html", icon: "👥", roles: ["MD", "HR", "ADMIN"] },
-        { label: "Leaves", href: "leaves.html", icon: "🗓️", roles: ["MD", "HR", "ADMIN", "EMPLOYEE"] },
-        { label: "Attendance", href: "attendance.html", icon: "🕒", roles: ["MD", "HR", "ADMIN", "EMPLOYEE"] }
+        { label: "Dashboard", href: "index.html", icon: "🏠", roles: ["SUPERUSER", "MD", "HR", "FINANCE", "EMPLOYEE"] },
+        { label: "Employees", href: "employees.html", icon: "👥", roles: ["SUPERUSER", "MD", "HR"] },
+        { label: "Leaves", href: "leaves.html", icon: "🗓️", roles: ["SUPERUSER", "MD", "HR", "EMPLOYEE"] },
+        { label: "Attendance", href: "attendance.html", icon: "🕒", roles: ["SUPERUSER", "MD", "HR", "EMPLOYEE"] },
+        { label: "Performance", href: "employee.html", icon: "📈", roles: ["SUPERUSER", "MD", "HR", "EMPLOYEE"] }
       ];
       const adminItems = [
-        { label: "Users", href: "users.html", icon: "🧑‍💼", roles: ["MD", "ADMIN"] },
-        { label: "Roles", href: "roles.html", icon: "🛡️", roles: ["MD", "ADMIN"] },
-        { label: "Settings", href: "settings.html", icon: "⚙️", roles: ["MD", "ADMIN"] },
-        { label: "Audit", href: "audit.html", icon: "🧾", roles: ["MD", "ADMIN"] }
+        { label: "Users", href: "users.html", icon: "🧑‍💼", roles: ["SUPERUSER", "MD"] },
+        { label: "Roles", href: "roles.html", icon: "🛡️", roles: ["SUPERUSER", "MD"] },
+        { label: "Settings", href: "settings.html", icon: "⚙️", roles: ["SUPERUSER", "MD"] },
+        { label: "Audit", href: "audit.html", icon: "🧾", roles: ["SUPERUSER", "MD"] }
       ];
       const hrItems = [
-        { label: "Approvals", href: "approvals.html", icon: "✅", roles: ["MD", "HR", "ADMIN"] }
+        { label: "Approvals", href: "approvals.html", icon: "✅", roles: ["SUPERUSER", "MD", "HR", "FINANCE"] },
+        { label: "Onboarding", href: "employees.html", icon: "🧾", roles: ["SUPERUSER", "MD", "HR"] },
+        { label: "Appraisals", href: "#", icon: "🏅", roles: ["SUPERUSER", "MD", "HR"] }
       ];
       const personalItems = [
-        { label: "Notifications", href: "notifications.html", icon: "🔔", roles: ["MD", "HR", "ADMIN", "MANAGER", "EMPLOYEE"] },
-        { label: "Vault", href: "vault.html", icon: "🔐", roles: ["MD", "HR", "ADMIN", "MANAGER", "EMPLOYEE"] }
+        { label: "Notifications", href: "notifications.html", icon: "🔔", roles: ["SUPERUSER", "MD", "HR", "FINANCE", "EMPLOYEE"] },
+        { label: "Vault", href: "vault.html", icon: "🔐", roles: ["SUPERUSER", "MD", "HR", "FINANCE", "EMPLOYEE"] }
       ];
       const financeItems = [
-        { label: "Payroll", href: "#", icon: "💳", roles: ["MD", "ADMIN"] },
-        { label: "Expenses", href: "#", icon: "📒", roles: ["MD", "ADMIN"] },
-        { label: "Invoices", href: "#", icon: "🧾", roles: ["MD", "ADMIN"] }
+        { label: "Payroll", href: "#", icon: "💳", roles: ["SUPERUSER", "MD", "FINANCE"] },
+        { label: "Expenses", href: "#", icon: "📒", roles: ["SUPERUSER", "MD", "FINANCE"] },
+        { label: "Accounting", href: "#", icon: "🧾", roles: ["SUPERUSER", "MD", "FINANCE"] },
+        { label: "Reports", href: "#", icon: "📊", roles: ["SUPERUSER", "MD", "FINANCE"] }
+      ];
+      const governanceItems = [
+        { label: "MD Governance", href: "#", icon: "🏛️", roles: ["SUPERUSER", "MD"] },
+        { label: "Superuser Desk", href: "#", icon: "🔒", roles: ["SUPERUSER"] }
       ];
 
       const renderNav = (items) => items.map((item) => {
@@ -308,7 +316,7 @@
               <div class="logo">OS</div>
               <div>
                 <div class="title">${Utils.escapeHtml(config.APP_NAME || "Office OS")}</div>
-                <div class="sub">Secure HR & Payroll Portal</div>
+                <div class="sub">${Utils.escapeHtml(config.COMPANY_NAME || "Enterprise Operations")}</div>
               </div>
             </div>
             <div class="nav-section">
@@ -318,6 +326,10 @@
             <div class="nav-section">
               <div class="nav-title">Finance</div>
               <nav class="nav">${renderNav(financeItems)}</nav>
+            </div>
+            <div class="nav-section">
+              <div class="nav-title">Governance</div>
+              <nav class="nav">${renderNav(governanceItems)}</nav>
             </div>
             <div class="nav-section">
               <div class="nav-title">Administration</div>
@@ -341,7 +353,7 @@
                 <button class="icon-btn" id="btnSidebar" aria-label="Toggle sidebar">☰</button>
                 <div class="topbar-title">
                   <span class="app-name">${Utils.escapeHtml(config.APP_NAME || "Office OS")}</span>
-                  <span class="portal-tag">Office OS Portal</span>
+                  <span class="portal-tag">Enterprise Operations Portal</span>
                 </div>
               </div>
               <div class="topbar-right">

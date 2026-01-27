@@ -2,12 +2,12 @@
   const ready = await Utils.ensureAuthenticated();
   if (!ready) return;
 
-  const canAccess = Utils.hasRole(["MD", "ADMIN"]);
+  const canAccess = Utils.hasRole(["MD", "SUPERUSER"]);
 
   const content = Layout.render({
     title: "User Administration",
-    subtitle: "Manage portal user accounts and access states.",
-    breadcrumb: ["Admin", "Users"]
+    subtitle: "Manage user accounts, approval states, and role assignments.",
+    breadcrumb: ["Administration", "Users"]
   });
 
   if (!content) return;
@@ -16,7 +16,7 @@
     content.innerHTML += `
       <div class="card">
         <h3>Access Restricted</h3>
-        <p class="muted">Only ADMIN and MD roles can access user administration.</p>
+        <p class="muted">Only Superuser and MD roles can access user administration.</p>
       </div>
     `;
     return;
@@ -32,8 +32,8 @@
         <div class="hd"><h3>Help Panel</h3><span class="hint">Operational tips</span></div>
         <ul class="help-list">
           <li>Deactivate users during offboarding.</li>
-          <li>Ensure role matches job function.</li>
-          <li>MD approvals required for admin accounts.</li>
+          <li>Ensure role requests align with department approvals.</li>
+          <li>Superuser approval required for elevated access.</li>
         </ul>
       </div>
     </div>
