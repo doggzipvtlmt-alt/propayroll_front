@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doggzi HRMS - Request Access</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>Access Request</h1>
+      <p class="subtext">Submit an approval request to the Maker role.</p>
+      <form id="requestForm">
+        <label>
+          Full Name
+          <input type="text" name="full_name" required />
+        </label>
+        <label>
+          Official Email (@doggzi.com)
+          <input type="email" name="email" required placeholder="name@doggzi.com" />
+        </label>
+        <label>
+          Phone Number
+          <input type="tel" name="phone_number" required placeholder="+91" />
+        </label>
+        <label>
+          Role Requested
+          <select name="role_requested" required>
+            <option value="HR">HR</option>
+            <option value="MD">MD</option>
+            <option value="EMPLOYEE">EMPLOYEE</option>
+            <option value="FINANCE">FINANCE</option>
+          </select>
+        </label>
+        <div class="actions">
+          <a href="login.html">Back to Login</a>
+          <button type="submit">Submit Request</button>
+        </div>
+      </form>
+      <p class="small" id="requestStatus"></p>
+    </div>
+  </div>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/pages/request-access.js"></script>
+</body>
+</html>

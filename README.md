@@ -1,42 +1,36 @@
-# ProPayroll Office OS Frontend
+# Doggzi HRMS Corporate Portal (Frontend)
 
-A static HTML/CSS/Vanilla JS portal for the ProPayroll Office OS platform. It consumes a FastAPI backend via REST APIs and renders a dense, print-friendly HR and payroll UI with fallback data so pages remain usable offline.
+This repository contains a static, role-based HRMS portal built with **HTML**, **CSS**, and **vanilla JavaScript**. It is designed to run as a Render Static Site and communicate with backend APIs configured in `assets/js/config.js`.
+
+## Features
+- Role-aware dashboards for Maker, HR, Finance, MD, and Employee personas.
+- Dense enterprise UI with tables, forms, status badges, and right-side help panel.
+- Modular JS utilities (toast, modal, loader, table renderer, pagination, badge).
+- Graceful API error handling with fallback sample data.
+
+## Local Preview
+Open `login.html` in a browser or serve the directory with any static file server.
 
 ## Configuration
-The API base URL and portal name live in `assets/js/config.js`:
+Update the API base URL in:
+```
+assets/js/config.js
+```
 
+Example:
 ```js
 window.APP_CONFIG = {
-  API_BASE_URL: "https://propayroll.onrender.com",
-  APP_NAME: "ProPayroll Office OS",
-  PORTAL_THEME: "SERIOUS"
+  API_BASE_URL: "http://127.0.0.1:8000"
 };
 ```
 
-## Login flow
-1. Open `login.html`.
-2. Enter `company_id`, `identifier`, and `dob_or_pin`.
-3. The portal calls `POST /api/auth/login`.
-4. On success, the token and user are stored in `localStorage`.
-5. All API calls include `Authorization: Bearer <token>` automatically.
-6. Use **Logout** in the top bar to clear the session.
+## Pages
+- Authentication: `login.html`, `request-access.html`
+- Shared portal: `dashboard.html` + role-based modules
+- Maker: `maker-approvals.html`, `maker-users.html`, `maker-limits.html`
+- HR: `employees.html`, `employee.html`, `appraisals.html`, `promotions.html`
+- Employee: `my-profile.html`, `attendance.html`, `leaves.html`, `payslips.html`, `tickets.html`, `notices.html`, `surveys.html`
+- Finance: `revenue.html`, `expenses.html`, `payroll-finance.html`, `reports.html`, `import-export.html`
 
-## Running locally (VS Code Live Server)
-1. Open the repository in VS Code.
-2. Right click `login.html` → **Open with Live Server**.
-3. Navigate to other pages (e.g. `employees.html`).
-
-## Deploy on Render (Static Site)
-1. Create a new **Static Site** service on Render.
-2. Connect the repository.
-3. **Root Directory**: leave blank (or set if deploying from a subfolder).
-4. **Build Command**: leave blank.
-5. **Publish Directory**: `.`
-6. SPA redirect is **not** required because this is a multi-page site.
-
-> Note: Static HTML cannot access environment variables at runtime. Commit `config.js` or fetch a `config.json` file at runtime if you need dynamic configuration.
-
-## API behavior
-- Responses are expected in the `{ ok, data, request_id }` envelope.
-- When the API is unavailable, pages render fallback demo data.
-- The most recent `request_id` is displayed in the footer for support requests.
+## Deployment
+This is a static site. Configure Render to serve the repository root.
