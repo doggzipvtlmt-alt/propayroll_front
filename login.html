@@ -1,35 +1,36 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>ProPayroll Office OS • Login</title>
-  <link rel="stylesheet" href="assets/css/styles.css"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doggzi HRMS - Login</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
 </head>
-<body class="login-body">
-  <main class="login-card">
-    <form id="loginForm" class="form-grid">
-      <input class="input" name="email" type="email" autocomplete="username" placeholder="Email (@doggzi.com)" aria-label="Email" required />
-      <input class="input" name="password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required />
-      <button class="btn primary" type="submit">Sign In</button>
-    </form>
-    <div class="card" style="margin-top:16px;">
-      <div class="hd">
-        <h3>Access Rules</h3>
-        <span class="hint">Doggzi Office OS</span>
-      </div>
-      <ul class="help-list">
-        <li>Only @doggzi.com emails can register.</li>
-        <li>New signups remain in PENDING_APPROVAL until Superuser approval.</li>
-        <li>Superuser: abhiyash@doggzi.com • Use Maker/Checker workflow.</li>
-      </ul>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1>HRMS Secure Login</h1>
+      <p class="subtext">Authorized access only. Use official credentials.</p>
+      <form id="loginForm">
+        <label>
+          Email
+          <input type="email" name="email" required placeholder="name@doggzi.com" />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" required placeholder="••••••••" />
+        </label>
+        <div class="actions">
+          <a href="request-access.html">Request Access</a>
+          <button type="submit">Sign In</button>
+        </div>
+      </form>
+      <p class="small" id="loginStatus"></p>
     </div>
-  </main>
-
+  </div>
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/utils.js"></script>
-  <script src="assets/js/components.js"></script>
   <script src="assets/js/api.js"></script>
-  <script src="assets/js/pages/login.js" defer></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/pages/login.js"></script>
 </body>
 </html>
