@@ -9,10 +9,21 @@
 <body class="login-body">
   <main class="login-card">
     <form id="loginForm" class="form-grid">
-      <input class="input" name="email" type="email" autocomplete="username" placeholder="Email" aria-label="Email" required />
+      <input class="input" name="email" type="email" autocomplete="username" placeholder="Email (@doggzi.com)" aria-label="Email" required />
       <input class="input" name="password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required />
       <button class="btn primary" type="submit">Sign In</button>
     </form>
+    <div class="card" style="margin-top:16px;">
+      <div class="hd">
+        <h3>Access Rules</h3>
+        <span class="hint">Doggzi Office OS</span>
+      </div>
+      <ul class="help-list">
+        <li>Only @doggzi.com emails can register.</li>
+        <li>New signups remain in PENDING_APPROVAL until Superuser approval.</li>
+        <li>Superuser: abhiyash@doggzi.com • Use Maker/Checker workflow.</li>
+      </ul>
+    </div>
   </main>
 
   <script src="assets/js/config.js"></script>
