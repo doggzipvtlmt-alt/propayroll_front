@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Doggzi Analytics Portal</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <h1>Doggzi Analytics Portal</h1>
+      <p>Enter the access code to continue.</p>
+      <input type="password" id="access-code" placeholder="Access code" />
+      <button id="login-btn">Login</button>
+      <div class="error" id="login-error"></div>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="logo">Doggzi Portal</div>
+      <nav>
+        <button data-section="dashboard" class="nav-btn active">Dashboard</button>
+        <button data-section="recipes" class="nav-btn">Recipe Explorer</button>
+        <button data-section="simulator" class="nav-btn">Pricing Simulator</button>
+        <button data-section="scenarios" class="nav-btn">Scenarios</button>
+      </nav>
+      <button id="logout-btn" class="logout">Logout</button>
+    </aside>
+
+    <main class="content">
+      <section id="dashboard" class="section active">
+        <h2>Dashboard</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Total Recipes</h3>
+            <p id="total-recipes">-</p>
+          </div>
+          <div class="card">
+            <h3>Unique Ingredients</h3>
+            <p id="unique-ingredients">-</p>
+          </div>
+          <div class="card">
+            <h3>Filters</h3>
+            <div class="filters">
+              <select id="filter-species"></select>
+              <select id="filter-food"></select>
+              <select id="filter-recipe"></select>
+              <button id="apply-filters">Apply</button>
+            </div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h3>Top Ingredients</h3>
+            <ul id="top-ingredients"></ul>
+          </div>
+          <div class="card">
+            <h3>Recipes by Type</h3>
+            <canvas id="recipe-type-chart"></canvas>
+          </div>
+          <div class="card">
+            <h3>Recipes by Food Type</h3>
+            <canvas id="food-type-chart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section id="recipes" class="section">
+        <h2>Recipe Explorer</h2>
+        <div class="card">
+          <div class="filters">
+            <input id="recipe-search" type="text" placeholder="Search by name or code" />
+            <select id="recipe-filter-species"></select>
+            <select id="recipe-filter-food"></select>
+            <select id="recipe-filter-type"></select>
+            <button id="recipe-filter-btn">Filter</button>
+          </div>
+        </div>
+        <div class="card">
+          <table class="table" id="recipe-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Recipe Code</th>
+                <th>Species</th>
+                <th>Food Type</th>
+                <th>Recipe Type</th>
+                <th>Quantity (g)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="card" id="recipe-detail">
+          <h3>Recipe Details</h3>
+          <div id="recipe-meta"></div>
+          <div id="percentage-warning" class="warning"></div>
+          <table class="table" id="ingredient-table">
+            <thead>
+              <tr>
+                <th>Ingredient</th>
+                <th>Percentage</th>
+                <th>Grams</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div id="ingredient-options"></div>
+        </div>
+      </section>
+
+      <section id="simulator" class="section">
+        <h2>Pricing Simulator</h2>
+        <div class="card">
+          <h3>Step A — Select Product</h3>
+          <select id="sim-recipe-select"></select>
+          <div id="sim-recipe-info"></div>
+          <table class="table" id="sim-ingredient-mix">
+            <thead>
+              <tr>
+                <th>Ingredient</th>
+                <th>Percentage</th>
+                <th>Grams</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Step B — Input Costs</h3>
+          <div class="split">
+            <div>
+              <h4>Ingredient Costs (₹/kg)</h4>
+              <input id="ingredient-search" type="text" placeholder="Search ingredient" />
+              <table class="table" id="cost-table">
+                <thead>
+                  <tr>
+                    <th>Ingredient</th>
+                    <th>Cost per kg (₹)</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <button id="save-costs">Save Cost Library</button>
+              <div id="cost-save-status" class="success"></div>
+            </div>
+            <div>
+              <h4>Packaging & Fulfillment</h4>
+              <div class="form-grid">
+                <label>Packaging per unit (₹)<input type="number" id="packaging-per-unit" min="0" step="0.01" /></label>
+                <label>Delivery per unit (₹)<input type="number" id="delivery-per-unit" min="0" step="0.01" /></label>
+                <label>Payment gateway %<input type="number" id="gateway-percent" min="0" max="5" step="0.1" /></label>
+                <label>Platform commission %<input type="number" id="commission-percent" min="0" max="30" step="0.1" /></label>
+              </div>
+              <h4>Fixed Monthly Expenses</h4>
+              <div class="form-grid">
+                <label>Rent (₹)<input type="number" id="fixed-rent" min="0" step="1" /></label>
+                <label>Salaries (₹)<input type="number" id="fixed-salaries" min="0" step="1" /></label>
+                <label>Utilities (₹)<input type="number" id="fixed-utilities" min="0" step="1" /></label>
+                <label>Tools/Software (₹)<input type="number" id="fixed-tools" min="0" step="1" /></label>
+                <label>Other fixed (₹)<input type="number" id="fixed-other" min="0" step="1" /></label>
+              </div>
+              <h4>Variable Monthly Expenses</h4>
+              <div class="form-grid">
+                <label>Marketing (₹)<input type="number" id="var-marketing" min="0" step="1" /></label>
+                <label>Operations misc (₹)<input type="number" id="var-ops" min="0" step="1" /></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Step C — Demand Model</h3>
+          <div class="form-grid">
+            <label>Baseline units / month<input type="number" id="baseline-units" min="0" step="1" /></label>
+            <label>Price elasticity<input type="number" id="price-elasticity" step="0.1" /></label>
+            <label>Reference price (₹)<input type="number" id="reference-price" min="0" step="1" /></label>
+            <label>CAC (₹)<input type="number" id="cac" min="0" step="1" /></label>
+            <label>Repeat rate %<input type="number" id="repeat-rate" min="0" max="100" step="1" /></label>
+          </div>
+          <div class="button-row">
+            <button class="preset" data-preset="conservative">Conservative</button>
+            <button class="preset" data-preset="base">Base</button>
+            <button class="preset" data-preset="aggressive">Aggressive</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Step D — Pricing & Output</h3>
+          <div class="form-grid">
+            <label>Selling price (₹)<input type="number" id="selling-price" min="0" step="1" /></label>
+            <label>Tax % (GST)<input type="number" id="tax-percent" min="0" max="28" step="0.5" /></label>
+          </div>
+          <div class="results-grid">
+            <div class="metric">
+              <h4>Unit COGS</h4>
+              <p id="unit-cogs">₹0</p>
+            </div>
+            <div class="metric">
+              <h4>Gross margin / unit</h4>
+              <p id="gross-margin">₹0</p>
+            </div>
+            <div class="metric">
+              <h4>Projected Units</h4>
+              <p id="projected-units">0</p>
+            </div>
+            <div class="metric">
+              <h4>Monthly Net Profit</h4>
+              <p id="net-profit">₹0</p>
+            </div>
+            <div class="metric">
+              <h4>Break-even Units</h4>
+              <p id="break-even">0</p>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <h4>Profit vs Price</h4>
+              <canvas id="profit-chart"></canvas>
+            </div>
+            <div class="card">
+              <h4>Units vs Price</h4>
+              <canvas id="units-chart"></canvas>
+            </div>
+            <div class="card">
+              <h4>Cost Breakdown</h4>
+              <canvas id="cost-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Step E — Save Scenario</h3>
+          <div class="form-grid">
+            <label>Scenario name<input type="text" id="scenario-name" /></label>
+            <button id="save-scenario">Save Scenario</button>
+            <div id="scenario-status" class="success"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scenarios" class="section">
+        <h2>Scenario Library</h2>
+        <div class="card">
+          <button id="refresh-scenarios">Refresh</button>
+          <button id="export-scenarios">Export CSV</button>
+        </div>
+        <div class="card" id="scenario-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

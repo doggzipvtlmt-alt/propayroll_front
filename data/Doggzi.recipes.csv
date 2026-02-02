@@ -1,0 +1,4 @@
+name,recipe_code,recipe_type,food_type,species,diet_type,quantity_grams,min_age_months,max_age_months,primary_ingredients[0].ingredient,primary_ingredients[0].percentage,primary_ingredients[1].ingredient,primary_ingredients[1].percentage,primary_ingredients[2].ingredient,primary_ingredients[2].percentage,ingredient_options[0].ingredient,ingredient_options[0].percentage
+Chicken Bowl,CBL-001,Fresh,Meal,Dog,Omnivore,500,6,120,Chicken Breast,60,Brown Rice,25,Carrot,15,Turkey Breast,60
+Salmon Supper,SSP-002,Fresh,Meal,Cat,Pescatarian,350,3,120,Salmon,55,Sweet Potato,30,Peas,15,Trout,55
+Veggie Mix,VMX-003,FreezeDried,Topper,Dog,Vegetarian,200,12,120,Lentils,40,Pumpkin,30,Spinach,30,,
